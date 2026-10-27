@@ -759,7 +759,7 @@
   function smashBoulder() {
     flight.smashed = true;
     const c = boulderCenter();
-    Sound.smash(flight.dur);
+    Sound.smash(); Sound.launch(flight.dur);
     power.shake = U * 1.2; flashT = Math.max(flashT, 0.25);
     rings.push({ x: c.x, y: c.y, r: R * 0.6, life: 1.3, big: true });
     const n = reduceMotion ? 10 : 26;
@@ -1497,22 +1497,18 @@
         noise(t, 1.1, { freq: 300, freqTo: 1800, vol: 0.22, attack: 0.15 });
         for (let i = 0; i < 16; i++) noise(t + Math.random() * 1.3, 0.025, { filter: 'highpass', freq: 2500 + Math.random() * 3000, vol: 0.12 });
       },
-      // Breakthrough sounds: a charge-up, the boulder shattering, a heroic flight, and the new boulder landing
+      // Breakthrough sounds: a charge-up, the boulder shattering, and the new boulder landing
       windup() {
         if (!ready()) return; const t = now();
         tone(180, t, 0.45, { wave: 'p25', slide: 900, vol: 0.13 });
         noise(t, 0.45, { filter: 'bandpass', freq: 300, freqTo: 2500, q: 1.2, vol: 0.2, attack: 0.2 });
       },
-      smash(dur = 3) {
+      smash() {
         if (!ready()) return; const t = now();
         const out = ac.createGain(); out.gain.value = 0.55; out.connect(sfxBus);
         tone(70, t, 0.7, { wave: 'sine', slide: 28, vol: 0.9, bus: out });
         noise(t, 0.65, { filter: 'lowpass', freq: 6000, freqTo: 250, vol: 0.8, bus: out });
         for (let i = 0; i < 16; i++) noise(t + 0.05 + Math.random() * 0.7, 0.03 + Math.random() * 0.05, { filter: 'bandpass', freq: 900 + Math.random() * 2400, q: 2, vol: 0.25 + Math.random() * 0.2, bus: out });
-        // the flight: rushing wind and a heroic fanfare
-        const T = Math.max(1.8, dur);
-        noise(t + 0.3, T, { filter: 'bandpass', freq: 350, freqTo: 1700, q: 0.6, vol: 0.4, attack: 0.4, bus: out });
-        [[523, 0.12], [659, 0.12], [784, 0.12], [1047, 0.32], [784, 0.12], [1047, 0.5]].reduce((at, [fq, d]) => { tone(fq, t + 0.4 + at, d, { wave: 'p25', vol: 0.11 }); return at + d; }, 0);
       },
       drop() {
         if (!ready()) return; const t = now();
@@ -1610,12 +1606,12 @@
         flight.lift = Math.min(H * 0.3, R * 4.5) * Math.pow(Math.sin(Math.PI * k), 0.6);
         moving = 1;
       }
-      // rocket jets from his feet (not when he's flying on his own) and a sparkle trail behind
-      if (tt >= 0 && !superFly && pose.feetWorld && !reduceMotion) pose.feetWorld.forEach(ft => {
+      // rocket jets from his feet and a sparkle trail behind
+      if (tt >= 0 && pose.feetWorld && !reduceMotion) pose.feetWorld.forEach(ft => {
         for (let n = 0; n < 3; n++) flames.push({ x: ft.x + (Math.random() - 0.5) * U * 0.2, y: ft.y, vx: -U * (0.5 + Math.random()), vy: U * (1.5 + Math.random() * 2), life: 0.8, r: U * (0.08 + Math.random() * 0.1) });
       });
       const bc = boulderCenter();
-      if (tt >= 0) for (let n = 0; n < (superFly ? 5 : 3); n++) trail.push({ x: bc.x - R * (0.6 + Math.random() * 0.8), y: bc.y + (Math.random() - 0.5) * R * 1.4, life: 1, c: ['#fee761', '#2ce8f5', '#f6757a', '#ffffff'][(Math.random() * 4) | 0] });
+      if (tt >= 0) for (let n = 0; n < 3; n++) trail.push({ x: bc.x - R * (0.6 + Math.random() * 0.8), y: bc.y + (Math.random() - 0.5) * R * 1.4, life: 1, c: ['#fee761', '#2ce8f5', '#f6757a', '#ffffff'][(Math.random() * 4) | 0] });
       if (k >= 1) {
         flight.active = false; flight.lift = 0; flight.hold = 1.4; flight.endedAt = performance.now();
         Sound.land();
@@ -2054,7 +2050,7 @@
     drawGround(p);
     drawAura(time);
     drawBoulder(p);
-    if (flight.active && flight.mode === 'superman' && flight.smashed && flight.t >= flight.smash) drawSuperheroRetro(time, p); else drawClimberRetro(time, p);
+    drawClimberRetro(time, p);
     drawDebris();
     drawFire(time);
     drawPowerFx(time);
@@ -2238,7 +2234,7 @@
     }
   }
 
-  // ---------- Breakthrough: flying-hero pose and smashed rock debris ----------
+  // ---------- Breakthrough: smashed rock debris ----------
   function drawDebris() {
     if (!debris.length) return;
     debris.forEach(d => {
@@ -2251,83 +2247,6 @@
     });
     ctx.globalAlpha = 1;
   }
-  function drawSuperheroRetro(time, p) {
-    if (!pxs) return;
-    const c = boulderCenter(), f = frameAt(boulderS());
-    // Body points along the direction of travel: tilted up on take-off, level mid-flight, nosing down to land
-    const k = Math.max(0, Math.min(1, (flight.t - flight.smash) / flight.dur));
-    let dx = f.tx, dy = f.ty - 0.55 * Math.cos(Math.PI * k);
-    const m = Math.hypot(dx, dy) || 1; dx /= m; dy /= m;
-    const nx = dy, ny = -dx;                                   // the "back" side of the body
-    const S = 1.3;                                              // overall size of the flying figure
-    const at = (a, b) => ({ x: c.x + (dx * a + nx * b) * S, y: c.y + (dy * a + ny * b) * S });
-    const wob = Math.sin(time / 90) * U * 0.04;
-    // head up and looking ahead, lead fist punched out in front, other arm tucked under, one leg straight and one bent
-    const sh = at(U * 0.5, 0), hip = at(-U * 0.45, 0), head = at(U * 0.98, U * 0.3);
-    const fist = at(U * 1.95, -U * 0.02), elbowF = at(U * 1.25, -U * 0.05);
-    const backHand = at(-U * 0.25, -U * 0.48), backElbow = at(U * 0.2, -U * 0.45);
-    const knee1 = at(-U * 1.1, U * 0.12 + wob), foot1 = at(-U * 1.75, U * 0.22 + wob);
-    const knee2 = at(-U * 1.0, -U * 0.22 - wob), foot2 = at(-U * 1.42, -U * 0.72 - wob);
-    pose.feetWorld = [foot1, foot2]; pose.core = { x: c.x, y: c.y };
-    const gold = power.superLevel > 0.3 && Math.floor(time / 90) % 3 !== 0;
-    const COL = gold
-      ? { dark: '#b86f50', skin: '#feae34', light: '#fee761', hair: '#733e39', cloth: '#be4a2f', foot: '#733e39' }
-      : { dark: '#733e39', skin: '#b86f50', light: '#e4a672', hair: '#3e2731', cloth: '#3e2731', foot: '#181425' };
-    const cells = new Map();
-    const put = (x, y, col) => cells.set(x + ',' + y, [x, y, col]);
-    const G = pt => ({ x: (pt.x - cam.x) / pxs, y: (pt.y - cam.y) / pxs });
-    const blob = (x, y, r, col) => { for (let j = -r; j <= r; j++) for (let i = -r; i <= r; i++) if (i * i + j * j <= r * r + r) put(x + i, y + j, col); };
-    const line = (a, b, w, col) => {
-      const A = G(a), B = G(b), n = Math.max(1, Math.ceil(Math.hypot(B.x - A.x, B.y - A.y) * 2));
-      for (let s = 0; s <= n; s++) {
-        const x = Math.round(A.x + (B.x - A.x) * s / n), y = Math.round(A.y + (B.y - A.y) * s / n);
-        if (w <= 1) put(x, y, col); else if (w === 2) { put(x, y, col); put(x + 1, y, col); put(x, y + 1, col); put(x + 1, y + 1, col); } else blob(x, y, 1, col);
-      }
-    };
-    const fillPoly = (pts, col) => {
-      const P = pts.map(G);
-      const x0 = Math.floor(Math.min(...P.map(q => q.x))), x1 = Math.ceil(Math.max(...P.map(q => q.x)));
-      const y0 = Math.floor(Math.min(...P.map(q => q.y))), y1 = Math.ceil(Math.max(...P.map(q => q.y)));
-      for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
-        let inside = false;
-        for (let i = 0, j = P.length - 1; i < P.length; j = i++) {
-          const a = P[i], b = P[j];
-          if ((a.y > y) !== (b.y > y) && x < (b.x - a.x) * (y - a.y) / (b.y - a.y) + a.x) inside = !inside;
-        }
-        if (inside) put(x, y, col);
-      }
-    };
-    // far leg and tucked arm in shadow
-    line(hip, knee2, 3, COL.dark); line(at(-U * 0.5, -U * 0.12), at(-U * 0.95, -U * 0.26 - wob), 3, COL.dark); line(knee2, foot2, 3, COL.dark);
-    line(sh, backElbow, 3, COL.dark); line(backElbow, backHand, 2, COL.dark);
-    // torso, broad at the shoulders
-    fillPoly([at(U * 0.62, U * 0.4), at(U * 0.62, -U * 0.36), at(U * 0.2, -U * 0.34), at(-U * 0.48, -U * 0.22), at(-U * 0.48, U * 0.24), at(U * 0.2, U * 0.4)], COL.skin);
-    fillPoly([at(U * 0.55, U * 0.36), at(U * 0.15, U * 0.36), at(-U * 0.3, U * 0.2), at(U * 0.2, U * 0.12)], COL.light);   // lit back and shoulders
-    line(at(U * 0.35, -U * 0.05), at(-U * 0.3, -U * 0.08), 1, COL.dark);                                                   // muscle shading
-    fillPoly([at(-U * 0.32, U * 0.27), at(-U * 0.32, -U * 0.25), at(-U * 0.68, -U * 0.22), at(-U * 0.68, U * 0.26)], COL.cloth);
-    // near leg, straight out behind
-    line(hip, knee1, 3, COL.skin); line(at(-U * 0.5, U * 0.16), at(-U * 1.05, U * 0.2 + wob), 3, COL.skin); line(knee1, foot1, 3, COL.skin);
-    line(at(-U * 0.55, U * 0.22), at(-U * 1.0, U * 0.24 + wob), 1, COL.light);
-    line(foot1, at(-U * 1.95, U * 0.24 + wob), 2, COL.foot); line(foot2, at(-U * 1.5, -U * 0.92 - wob), 2, COL.foot);
-    // head with hair at the back
-    const H0 = G(head), hx = Math.round(H0.x), hy = Math.round(H0.y), hr = Math.max(3, Math.round(U * 0.27 * S / pxs));
-    line(at(U * 0.55, U * 0.12), head, 3, COL.skin);
-    blob(hx, hy, hr, COL.skin);
-    for (let a = 0.6; a <= 2.6; a += 0.3) {
-      const ang = Math.atan2(dy, dx) + Math.PI - 0.6 + a * 0.6;
-      put(hx + Math.round(Math.cos(ang) * hr), hy + Math.round(Math.sin(ang) * hr), COL.hair);
-    }
-    // lead arm punching forward, fist first
-    line(at(U * 0.55, -U * 0.12), elbowF, 3, COL.skin); line(elbowF, fist, 3, COL.light);
-    const FI = G(fist); blob(Math.round(FI.x), Math.round(FI.y), 2, COL.light);
-    // outline, then fill
-    const outline = [];
-    cells.forEach(([x, y]) => [[1, 0], [-1, 0], [0, 1], [0, -1]].forEach(([i, j]) => { if (!cells.has((x + i) + ',' + (y + j))) outline.push([x + i, y + j]); }));
-    const wx = x => cam.x + x * pxs, wy = y => cam.y + y * pxs;
-    ctx.fillStyle = '#181425'; outline.forEach(([x, y]) => ctx.fillRect(wx(x), wy(y), pxs, pxs));
-    cells.forEach(([x, y, col]) => { ctx.fillStyle = col; ctx.fillRect(wx(x), wy(y), pxs, pxs); });
-  }
-
   function drawAura(time) {
     const sl = power.superLevel;
     if (sl < 0.02 || !pose.core) return;
