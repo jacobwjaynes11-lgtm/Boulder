@@ -496,6 +496,7 @@
   const SOAR_WINDOW_S = 60;        // ...within 60 seconds, and past a milestone, also triggers a flight
   const flight = { active: false, t: 0, dur: 2, from: 0, to: 0, hold: 0, lift: 0 };
   let mcHistory = [], trail = [], soarBlocked = false;
+  let fireworks = [], flashT = 0, recentFlow = [];   // milestone celebrations; recent buy/sell flow for the music's mood
   const power = { heaveT: -1, heaveFired: false, superT: 0, superLevel: 0, shake: 0 };
   let rings = [], sparks = [];
   let mint = '';
@@ -665,7 +666,7 @@
     if (!(v > 0)) return;
     const prev = mc, prevAth = ath;
     mc = v; if (mc > ath) ath = mc;
-    if (!silent && prevAth > 0 && nextMilestone(prevAth) <= ath) Sound.milestone();
+    if (!silent && prevAth > 0 && nextMilestone(prevAth) <= ath) celebrateMilestone(prevAth);
     if (silent) { shownF = fracFor(mc); mcHistory = []; }
     else {
       const now = performance.now() / 1000;
@@ -697,6 +698,7 @@
       });
     }
     if (type === 'buy') Sound.push(sol); else Sound.sell(sol);
+    recentFlow.push([performance.now(), type === 'buy' ? sol : -sol]);
     addFeed(type, type === 'buy' ? 'Buy' : 'Sell', fmtSol(sol) + ' SOL', shortAddr(wallet), sig);
     updateStats(); save();
   }
@@ -1288,7 +1290,8 @@
   const Sound = (() => {
     let ac = null, master, musicBus, sfxBus, noiseBuf, pulse12, pulse25;
     let pref = {}; try { pref = JSON.parse(localStorage.getItem('boulder:sound') || '{}'); } catch (e) {}
-    let sfxOn = !!pref.sfx, musicOn = !!pref.music, energy = 0.2, lastStep = 0, timer = null, step = 0, nextTime = 0;
+    let sfxOn = !!pref.sfx, musicOn = !!pref.music, energy = 0.2, mood = 0, lastStep = 0, timer = null, step = 0, nextTime = 0;
+    const MOOD_RANGE = 0.12;   // pumping speeds sound up by up to 12%, selling slows it down by up to 12%
     const save = () => { try { localStorage.setItem('boulder:sound', JSON.stringify({ sfx: sfxOn, music: musicOn })); } catch (e) {} };
     const mtof = m => 440 * Math.pow(2, (m - 69) / 12);
 
@@ -1314,9 +1317,12 @@
     // One note: square-ish pulse, triangle or sine, with an optional pitch slide
     function tone(freq, t, dur, o = {}) {
       const osc = ac.createOscillator(), g = ac.createGain();
+      // Effects follow the market's mood: quicker and a touch higher when pumping, slower and lower when selling
+      const r = (!o.bus || o.bus === sfxBus) ? 1 + MOOD_RANGE * mood : 1, pr = Math.pow(r, 0.6);
+      dur /= r; freq *= pr;
       if (o.wave === 'p12') osc.setPeriodicWave(pulse12); else if (o.wave === 'p25') osc.setPeriodicWave(pulse25); else osc.type = o.wave || 'square';
       osc.frequency.setValueAtTime(freq, t);
-      if (o.slide) osc.frequency.exponentialRampToValueAtTime(Math.max(20, o.slide), t + dur);
+      if (o.slide) osc.frequency.exponentialRampToValueAtTime(Math.max(20, o.slide * pr), t + dur);
       const v = o.vol ?? 0.2;
       g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(v, t + 0.006);
       g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
@@ -1325,9 +1331,11 @@
     // Filtered noise: drums, dust, fire, wind
     function noise(t, dur, o = {}) {
       const src = ac.createBufferSource(), f = ac.createBiquadFilter(), g = ac.createGain();
+      const r = (!o.bus || o.bus === sfxBus) ? 1 + MOOD_RANGE * mood : 1, pr = Math.pow(r, 0.6);
+      dur /= r;
       src.buffer = noiseBuf; src.loop = true;
-      f.type = o.filter || 'lowpass'; f.frequency.setValueAtTime(o.freq || 1200, t); f.Q.value = o.q || 0.8;
-      if (o.freqTo) f.frequency.exponentialRampToValueAtTime(o.freqTo, t + dur);
+      f.type = o.filter || 'lowpass'; f.frequency.setValueAtTime((o.freq || 1200) * pr, t); f.Q.value = o.q || 0.8;
+      if (o.freqTo) f.frequency.exponentialRampToValueAtTime(o.freqTo * pr, t + dur);
       const v = o.vol ?? 0.2;
       g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(v, t + (o.attack || 0.005));
       g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
@@ -1367,7 +1375,8 @@
     }
     function schedule() {
       if (!ac || ac.state !== 'running') return;
-      const spb = 60 / (BPM * (energy > 0.85 ? 1.12 : 1)) / 4;
+      // Tempo follows the market: faster while people are buying, slower while they're selling
+      const spb = 60 / (BPM * (1 + MOOD_RANGE * mood) * (energy > 0.85 ? 1.08 : 1)) / 4;
       if (nextTime < ac.currentTime) nextTime = ac.currentTime + 0.05;
       while (nextTime < ac.currentTime + 0.15) { playStep(step, nextTime, spb); nextTime += spb; step = (step + 1) % 128; }
     }
@@ -1461,7 +1470,7 @@
     return {
       ...fx, wire,
       // Music gets busier when the boulder is moving, a big buy hits, or he's flying
-      tick(dt, target) { energy += (target - energy) * Math.min(1, dt * 1.5); },
+      tick(dt, target, m = 0) { energy += (target - energy) * Math.min(1, dt * 1.5); mood += (m - mood) * Math.min(1, dt * 0.8); },
     };
   })();
   Sound.wire();
@@ -1531,6 +1540,26 @@
     else if (diff * L < -1) { shownF = Math.max(targetF, shownF - Math.max(U * 0.7, Math.min(-diff * L * 0.6, Math.max(U * 6, -diff * L * 0.3))) * dt / L); moving = -1; }
     else moving = 0;
     trail.forEach(t => { t.x -= U * 0.6 * dt; t.life -= dt * 1.6; });
+    // Fireworks and the celebration flash
+    flashT = Math.max(0, flashT - dt);
+    fireworks.forEach(f => {
+      if (f.delay > 0) { f.delay -= dt; return; }
+      if (!f.exploded) {
+        f.x += f.vx * dt; f.y += f.vy * dt; f.vy += H * 0.9 * dt; f.fuse -= dt;
+        if (f.fuse <= 0) {
+          f.exploded = true;
+          const k = reduceMotion ? 14 : 36;
+          for (let i = 0; i < k; i++) {
+            const a = (i / k) * Math.PI * 2 + Math.random() * 0.2, sp = U * (2.5 + Math.random() * 3.5);
+            f.sparks.push({ x: f.x, y: f.y, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp, life: 1 + Math.random() * 0.3 });
+          }
+        }
+      }
+      f.sparks.forEach(s => { s.x += s.vx * dt; s.y += s.vy * dt; s.vx *= 0.97; s.vy = s.vy * 0.97 + U * 2.2 * dt; s.life -= dt * 0.8; });
+      f.sparks = f.sparks.filter(s => s.life > 0);
+    });
+    fireworks = fireworks.filter(f => f.delay > 0 || !f.exploded || f.sparks.length);
+
     trail = trail.filter(t => t.life > 0);
 
     const ds = (shownF - prevF) * L;
@@ -1933,6 +1962,7 @@
     drawClimberRetro(time, p);
     drawFire(time);
     drawPowerFx(time);
+    drawFireworks();
 
     embers.forEach(e => {
       ctx.fillStyle = `rgba(255,${Math.round(120 + 100 * e.life)},60,${e.life})`;
@@ -1941,6 +1971,7 @@
     dust.forEach(d => { ctx.fillStyle = `rgba(226,210,236,${d.life * 0.55})`; ctx.beginPath(); ctx.arc(d.x, d.y, d.r * (2 - d.life), 0, Math.PI * 2); ctx.fill(); });
     ctx.restore();
 
+    if (flashT > 0) { ctx.fillStyle = `rgba(255,246,216,${Math.min(0.55, flashT * 1.8)})`; ctx.fillRect(0, 0, W, H); }
     // Vignette + grain
     const v = ctx.createRadialGradient(W * 0.5, H * 0.45, Math.min(W, H) * 0.35, W * 0.5, H * 0.5, Math.max(W, H) * 0.8);
     v.addColorStop(0, 'rgba(8,5,20,0)'); v.addColorStop(1, 'rgba(8,5,20,0.5)');
@@ -2124,6 +2155,41 @@
     bg.addColorStop(0, `rgba(255,214,130,${0.35 * sl})`); bg.addColorStop(1, 'rgba(255,214,130,0)');
     ctx.fillStyle = bg; ctx.fillRect(b.x - br, b.y - br, br * 2, br * 2);
   }
+  // Milestone fireworks: rockets rise from below the view and burst into pixel sparks
+  function drawFireworks() {
+    if (!fireworks.length) return;
+    const o = pxs || 3;
+    fireworks.forEach(f => {
+      if (f.delay > 0) return;
+      if (!f.exploded) {
+        ctx.fillStyle = '#fff6d8'; ctx.fillRect(f.x, f.y, o * 2, o * 2);
+        ctx.fillStyle = f.c; ctx.fillRect(f.x, f.y + o * 2, o, o * 3);
+      }
+      f.sparks.forEach(s => {
+        ctx.globalAlpha = Math.max(0, Math.min(1, s.life * 1.4));
+        ctx.fillStyle = s.life > 0.6 ? '#ffffff' : f.c;
+        ctx.fillRect(s.x, s.y, o * (s.life > 0.5 ? 2 : 1), o * (s.life > 0.5 ? 2 : 1));
+      });
+      ctx.globalAlpha = 1;
+    });
+  }
+  function celebrateMilestone(prevAth) {
+    const crossed = MILESTONES.filter(m => m > prevAth && m <= ath);
+    const m = crossed[crossed.length - 1];
+    if (!m) return;
+    Sound.milestone();
+    if (!W) return;
+    floaters.push({ x: W * 0.5, y: H * 0.36, screen: true, life: 3.2, text: usd(m) + ' reached!', color: '#fee761', size: 34 });
+    flashT = 0.32;
+    const colors = ['#fee761', '#2ce8f5', '#f6757a', '#63c74d', '#b55088', '#feae34'];
+    const n = reduceMotion ? 2 : 7;
+    for (let i = 0; i < n; i++) fireworks.push({
+      x: cam.x + W * (0.12 + Math.random() * 0.76), y: cam.y + H * 1.02,
+      vx: (Math.random() - 0.5) * U * 1.6, vy: -H * (1.2 + Math.random() * 0.35),
+      fuse: 0.75 + Math.random() * 0.3, delay: i * 0.22, exploded: false, c: colors[i % colors.length], sparks: [],
+    });
+  }
+
   function drawPowerFx(time) {
     ctx.save();
     trail.forEach(t => { ctx.globalAlpha = Math.min(1, t.life * 1.4); ctx.fillStyle = t.c; const s = (pxs || 3) * (t.life > 0.5 ? 2 : 1); ctx.fillRect(t.x, t.y, s, s); });
@@ -2508,11 +2574,20 @@
     ctx.beginPath(); ctx.arc(c.x, c.y, R - 1, -Math.PI * 0.75, -Math.PI * 0.05); ctx.stroke();
   }
 
+  // Buying vs selling over the last 30 seconds, from -1 (all sells) to +1 (all buys)
+  function marketMood() {
+    const t = performance.now();
+    if (recentFlow.length && t - recentFlow[0][0] > 30000) recentFlow = recentFlow.filter(f => t - f[0] <= 30000);
+    let b = 0, s = 0;
+    for (const [, v] of recentFlow) { if (v > 0) b += v; else s -= v; }
+    return Math.max(-1, Math.min(1, (b - s) / (b + s + 0.3)));
+  }
+
   // ---------- Loop ----------
   let last = performance.now();
   function loop(now) {
     const dt = Math.min(0.05, (now - last) / 1000); last = now;
-    if (W && H) { update(dt); draw(now); Sound.tick(dt, flight.active || power.superLevel > 0.5 ? 1 : moving === 1 ? 0.6 : moving === -1 ? 0.45 : 0.2); }
+    if (W && H) { update(dt); draw(now); Sound.tick(dt, flight.active || power.superLevel > 0.5 ? 1 : moving === 1 ? 0.6 : moving === -1 ? 0.45 : 0.2, marketMood()); }
     requestAnimationFrame(loop);
   }
 
