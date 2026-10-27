@@ -4,9 +4,12 @@
 //   /api/rpc                  locked-down pass-through to your Solana RPC for wallet balances and trading
 //   everything else           the website in /public
 //
-// Needs one secret in Cloudflare: RPC_URL (your Helius link). It never reaches the browser.
+// Uses the secret RPC_URL (your Helius link) if set; otherwise falls back to Solana's free public RPC,
+// which works for light traffic but can be rate-limited. The key never reaches the browser.
 
 const MINT_RE = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/;
+const PUBLIC_RPC = 'https://api.mainnet-beta.solana.com';
+const rpcUrl = env => env.RPC_URL || PUBLIC_RPC;
 const WSOL = 'So11111111111111111111111111111111111111112';
 const RPC_ALLOWED = new Set(['getBalance', 'getTokenAccountsByOwner', 'getTokenSupply', 'getLatestBlockhash',
   'sendTransaction', 'getSignatureStatuses', 'getSignaturesForAddress', 'getAccountInfo']);
@@ -133,12 +136,11 @@ function json(obj, status = 200) {
 }
 
 async function rpc(env, method, params) {
-  if (!env.RPC_URL) throw new Error('RPC_URL secret is not set in Cloudflare');
-  const r = await fetch(env.RPC_URL, {
+  const r = await fetch(rpcUrl(env), {
     method: 'POST', headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ jsonrpc: '2.0', id: 1, method, params }),
   });
-  if (r.status === 429) throw new Error('Solana RPC rate limit hit (429)');
+  if (r.status === 429 || r.status === 403) throw new Error('Solana RPC refused the request (' + r.status + ')' + (env.RPC_URL ? '' : ': add your Helius link as the RPC_URL secret'));
   const j = await r.json();
   if (j.error) throw new Error(j.error.message || 'RPC error');
   return j.result;
@@ -150,8 +152,7 @@ async function rpcProxy(request, env) {
   if (body.length > 20000) return json({ error: 'Request too large' }, 413);
   let msg; try { msg = JSON.parse(body); } catch { return json({ error: 'Bad JSON' }, 400); }
   if (Array.isArray(msg) || !RPC_ALLOWED.has(msg.method)) return json({ error: 'Method not allowed' }, 403);
-  if (!env.RPC_URL) return json({ error: 'RPC_URL secret is not set in Cloudflare' }, 500);
-  const r = await fetch(env.RPC_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body });
+  const r = await fetch(rpcUrl(env), { method: 'POST', headers: { 'Content-Type': 'application/json' }, body });
   return new Response(r.body, { status: r.status, headers: { 'Content-Type': 'application/json' } });
 }
 
