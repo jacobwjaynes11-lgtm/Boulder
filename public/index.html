@@ -184,6 +184,8 @@
   .launch-page { max-width: 560px; }
   .launch-page h2.big { margin-bottom: 8px; }
   .launch-page .lede { font-size: 17px; max-width: none; }
+  label.check { display: flex; align-items: center; gap: 10px; font-weight: 400; color: var(--muted); margin: 12px 0 0; cursor: pointer; }
+  label.check input { width: 18px; height: 18px; margin: 0; accent-color: var(--accent); flex: none; }
   @media (max-width: 760px) { .page { padding: 48px 16px; } }
 
   /* Burn plan */
@@ -295,7 +297,7 @@
 
 <div class="hero" id="top">
   <h1>Push the boulder.</h1>
-  <p><span data-site="name">Boulder</span> is a meme coin with a game strapped to it. Every buy pushes Sisyphus up the mountain, every sell lets the boulder slide back, and creator fees buy the coin back and burn it. He never reaches the top. That’s the point.</p>
+  <p id="heroText"><span data-site="name">Boulder</span> is a meme coin with a game strapped to it. Every buy pushes Sisyphus up the mountain, every sell lets the boulder slide back, and creator fees buy the coin back and burn it. He never reaches the top. That’s the point.</p>
   <div class="cta">
     <a class="btn buy-link" href="#buy" target="_blank" rel="noopener">Buy <span data-site="ticker">$BOULDER</span></a>
     <span class="ca-chip" data-ca-wrap hidden>CA <code data-ca></code><button class="ghost small" data-copy-ca>Copy</button></span>
@@ -417,7 +419,7 @@
   <div class="burn-wrap">
     <div>
       <h2 class="big">The burn</h2>
-      <p>Every trade pays creator fees. We regularly claim them, buy the coin back off the market and burn it, taking it out of circulation for good. Supply only goes one way.</p>
+      <p id="burnText">Every trade pays creator fees. We regularly claim them, buy the coin back off the market and burn it, taking it out of circulation for good. Supply only goes one way.</p>
       <p>You can watch it happen live: each burn sets his feet on fire and shrinks the mountain.</p>
       <p data-burn-wallet hidden>Every claim, buyback and burn happens in one public wallet, so you can check it yourself: <a id="burnWalletLink" target="_blank" rel="noopener"></a></p>
     </div>
@@ -449,10 +451,11 @@
 
 <section class="page launch-page" id="launch">
       <h2 class="big">Put the boulder on your coin</h2>
-      <p class="lede">Launch a coin on pump.fun, then paste its contract address to get your own boulder page, with live trades, burns and trading built in.</p>
+      <p class="lede">Launch a coin on pump.fun, then paste its contract address to get your own boulder page, with live trades and trading built in.</p>
       <a class="btn" href="https://pump.fun/create" target="_blank" rel="noopener">Launch a coin on pump.fun</a>
       <label for="launchMint">Your coin’s contract address</label>
       <input id="launchMint" placeholder="Paste your contract address" autocomplete="off" spellcheck="false">
+      <label class="check"><input type="checkbox" id="launchBurns"> My coin burns supply: add a burn tracker to my page</label>
       <div class="row"><button id="makeLink">Get my boulder page</button></div>
       <div class="launch-out" id="launchOut" hidden>
         <input id="launchUrl" readonly>
@@ -1246,7 +1249,7 @@
       launchStatus.textContent = 'That doesn’t look like a Solana contract address. Copy it from your coin’s pump.fun page.';
       launchStatus.className = 'status err'; $('#launchOut').hidden = true; return;
     }
-    const url = location.origin + location.pathname + '?mint=' + ca + '&clean=1';
+    const url = location.origin + location.pathname + '?mint=' + ca + '&clean=1' + ($('#launchBurns').checked ? '&burns=1' : '');
     $('#launchUrl').value = url; $('#openLaunch').href = url; $('#launchOut').hidden = false;
     launchStatus.textContent = 'Your boulder page is ready. Share the link anywhere.'; launchStatus.className = 'status ok';
   };
@@ -2833,6 +2836,35 @@
   // Visitors to a coin's page don't see the test controls (add ?dev=1 to bring them back)
   if ((COIN_MINT || params.get('mint')) && params.get('dev') !== '1') document.body.classList.add('hide-dev');
   renderQuick(); renderWallet();
+  // ---------- Someone else's coin (a page made with "Put the boulder on your coin") ----------
+  // Shows only the game, live trades and trading for their coin: none of this coin's burn plan, burn claims, socials or branding.
+  // Their burn tracker only appears if they ticked "My coin burns supply" (&burns=1 in their link).
+  function setupGuestPage(coin, burns) {
+    document.body.classList.add('guest');
+    const hide = el => { if (el) el.hidden = true; };
+    hide($('#plan')); document.querySelectorAll('a[href="#plan"]').forEach(hide);
+    document.querySelectorAll('[data-burn-wallet]').forEach(hide);
+    if (burns) $('#burnText').textContent = 'This coin burns supply. Every burn sets his feet on fire and shrinks the mountain, and the numbers here update live from the chain.';
+    else { hide($('#burn')); document.querySelectorAll('a[href="#burn"]').forEach(hide); }
+    $('#heroText').textContent = 'Every buy of this coin pushes Sisyphus up the mountain and every sell lets the boulder slide back' + (burns ? ', and every burn sets his feet on fire.' : '.') + ' He never reaches the top.';
+    ['x', 'telegram', 'discord', 'tiktok', 'instagram', 'youtube', 'burnWallet'].forEach(k => SITE[k] = '');
+    SITE.url = location.origin + location.pathname + location.search;
+    const applyName = (ticker, name) => {
+      SITE.ticker = ticker; SITE.name = name || ticker;
+      document.querySelectorAll('[data-site]').forEach(el => { const v = SITE[el.dataset.site]; if (v) el.textContent = v; });
+      document.title = SITE.name + ' · Push the Boulder';
+    };
+    applyName(shortAddr(coin), 'This coin');
+    // Their coin's real ticker and name, once DexScreener has it
+    fetch('https://api.dexscreener.com/tokens/v1/solana/' + coin).then(r => r.json()).then(pairs => {
+      const p = Array.isArray(pairs) && pairs[0];
+      const t = p && (p.baseToken?.address === coin ? p.baseToken : p.quoteToken?.address === coin ? p.quoteToken : null);
+      if (t && t.symbol) applyName('$' + t.symbol.toUpperCase(), t.name);
+    }).catch(() => {});
+  }
+  const guestMint = params.get('mint');
+  if (guestMint && guestMint !== COIN_MINT && /^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(guestMint)) setupGuestPage(guestMint, params.get('burns') === '1');
+
   let startMint = params.get('mint') || COIN_MINT;
   if (startMint && !inPreview) { $('#mint').value = startMint; goLive(startMint); }
   else startDemo();
