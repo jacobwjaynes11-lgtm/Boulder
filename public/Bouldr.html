@@ -361,6 +361,7 @@
         <button class="buy" data-test="buy" data-sol="1">Test 1 SOL buy</button>
         <button class="buy" data-test="buy" data-sol="5">Test 5 SOL buy</button>
         <button class="buy" data-test="buy" data-sol="10">Test 10 SOL whale buy</button>
+        <button class="buy" data-test="buy" data-sol="15">Test 15 SOL breakthrough</button>
       </div>
       <p class="status" id="status">Paste a contract address and go live, or run the demo to see it move.</p>
     </section>
@@ -492,9 +493,11 @@
   const MIGHTY_SOL = 1, SUPER_SOL = 5;
   // Flight: a whale buy or a fast market cap surge sends him flying with the boulder to the next cap
   const WHALE_SOL = 10;            // any single buy of this many SOL or more is a whale buy
+  const BREAK_SOL = 15;            // 15+ SOL: he smashes through the boulder and flies like a superhero; a new boulder drops in when he lands
   const SOAR_PCT = 0.5;            // market cap up 50%...
   const SOAR_WINDOW_S = 60;        // ...within 60 seconds, and past a milestone, also triggers a flight
-  const flight = { active: false, t: 0, dur: 2, from: 0, to: 0, hold: 0, lift: 0 };
+  const flight = { active: false, t: 0, dur: 2, from: 0, to: 0, hold: 0, lift: 0, mode: 'carry', smash: 0, smashed: false, dropT: 0 };
+  let debris = [];
   let mcHistory = [], trail = [], soarBlocked = false;
   let fireworks = [], flashT = 0, recentFlow = [];   // milestone celebrations; recent buy/sell flow for the music's mood
   const power = { heaveT: -1, heaveFired: false, superT: 0, superLevel: 0, shake: 0 };
@@ -672,7 +675,8 @@
       const now = performance.now() / 1000;
       mcHistory.push([now, mc]); mcHistory = mcHistory.filter(h => now - h[0] <= SOAR_WINDOW_S);
       const low = Math.min(...mcHistory.map(h => h[1]), prev || mc);
-      if (!soarBlocked && low > 0 && mc >= low * (1 + SOAR_PCT) && nextMilestone(low) <= mc) startFlight('soar', low);
+      const sinceFlight = flight.endedAt ? (performance.now() - flight.endedAt) / 1000 : Infinity;   // don't re-fly on the same pump right after a flight
+      if (!soarBlocked && sinceFlight > SOAR_WINDOW_S && low > 0 && mc >= low * (1 + SOAR_PCT) && nextMilestone(low) <= mc) startFlight('soar', low);
     }
     updateStats();
   }
@@ -687,7 +691,7 @@
     soarBlocked = whale;
     if (newMc > 0) setMarketCap(newMc);
     soarBlocked = false;
-    if (whale) startFlight('whale', before);
+    if (whale) startFlight(sol >= BREAK_SOL ? 'break' : 'whale', before);
     if (type === 'buy' && sol >= SUPER_SOL) startSuper(sol);
     else if (type === 'buy' && sol >= MIGHTY_SOL) startHeave(false);
     if (L > 1) {
@@ -737,16 +741,41 @@
   function startFlight(kind, fromMc) {
     if (flight.active || L <= 1) return;
     const capAhead = nextMilestone(fromMc || mc);
-    const destMc = kind === 'whale' ? Math.max(mc, capAhead) : mc;
+    const destMc = kind === 'whale' || kind === 'break' ? Math.max(mc, capAhead) : mc;
     const to = Math.max(fracFor(destMc), shownF);
-    if (to - shownF < 0.004) return;
+    if ((to - shownF) * L < SEG * 0.25) return;           // too short a hop to be worth a flight
+    flight.endedAt = performance.now();
     Object.assign(flight, { active: true, t: 0, from: shownF, to, hold: 0, dur: Math.max(1.8, Math.min(5, 1.6 + Math.log2(1 + (to - shownF) * L / SEG) * 0.9)) });
+    flight.mode = kind === 'break' ? 'superman' : 'carry'; flight.smash = kind === 'break' ? 0.5 : 0; flight.smashed = false; flight.dropT = 0;
     power.heaveT = -1;
-    Sound.launch(flight.dur);
+    if (flight.mode === 'superman') Sound.windup(); else Sound.launch(flight.dur);
     const b = boulderCenter();
-    floaters.push({ x: W * 0.5, y: H * 0.26, screen: true, life: 2.4, text: (kind === 'whale' ? 'Whale! ' : 'Soaring! ') + 'Flying to ' + usd(destMc), color: '#fee761', size: 26 });
+    floaters.push({ x: W * 0.5, y: H * 0.26, screen: true, life: 2.4, text: (kind === 'break' ? 'BREAKTHROUGH! ' : kind === 'whale' ? 'Whale! ' : 'Soaring! ') + 'Flying to ' + usd(destMc), color: '#fee761', size: 26 });
     rings.push({ x: b.x, y: b.y + R, r: R * 0.8, life: 1.2, big: true });
     power.shake = U * 0.6;
+  }
+
+  // ---------- Breakthrough: smash the boulder, then a new one drops in after landing ----------
+  function smashBoulder() {
+    flight.smashed = true;
+    const c = boulderCenter();
+    Sound.smash(flight.dur);
+    power.shake = U * 1.2; flashT = Math.max(flashT, 0.25);
+    rings.push({ x: c.x, y: c.y, r: R * 0.6, life: 1.3, big: true });
+    const n = reduceMotion ? 10 : 26;
+    for (let i = 0; i < n; i++) {
+      const a = Math.random() * Math.PI * 2, sp = U * (3 + Math.random() * 7);
+      debris.push({ x: c.x + Math.cos(a) * R * 0.5, y: c.y + Math.sin(a) * R * 0.5, vx: Math.cos(a) * sp, vy: Math.sin(a) * sp - U * 3,
+        rot: Math.random() * 6, vr: (Math.random() - 0.5) * 12, s: R * (0.15 + Math.random() * 0.35), life: 1.4 });
+    }
+    for (let i = 0; i < 20; i++) dust.push({ x: c.x + (Math.random() - 0.5) * R * 2, y: c.y + (Math.random() - 0.5) * R * 2, vx: (Math.random() - 0.5) * 5, vy: (Math.random() - 0.5) * 5, life: 1, r: 3 + Math.random() * 4 });
+  }
+  function boulderLanded() {
+    const f = frameAt(boulderS());
+    Sound.drop();
+    power.shake = U * 0.9;
+    rings.push({ x: f.x, y: f.y, r: R * 0.6, life: 1.1, big: false });
+    for (let n = 0; n < 20; n++) dust.push({ x: f.x + (Math.random() - 0.5) * R * 2.4, y: f.y, vx: (Math.random() - 0.5) * 5, vy: -Math.random() * 3, life: 1, r: 2 + Math.random() * 3 });
   }
 
   // ---------- Burns ----------
@@ -1468,6 +1497,29 @@
         noise(t, 1.1, { freq: 300, freqTo: 1800, vol: 0.22, attack: 0.15 });
         for (let i = 0; i < 16; i++) noise(t + Math.random() * 1.3, 0.025, { filter: 'highpass', freq: 2500 + Math.random() * 3000, vol: 0.12 });
       },
+      // Breakthrough sounds: a charge-up, the boulder shattering, a heroic flight, and the new boulder landing
+      windup() {
+        if (!ready()) return; const t = now();
+        tone(180, t, 0.45, { wave: 'p25', slide: 900, vol: 0.13 });
+        noise(t, 0.45, { filter: 'bandpass', freq: 300, freqTo: 2500, q: 1.2, vol: 0.2, attack: 0.2 });
+      },
+      smash(dur = 3) {
+        if (!ready()) return; const t = now();
+        const out = ac.createGain(); out.gain.value = 0.55; out.connect(sfxBus);
+        tone(70, t, 0.7, { wave: 'sine', slide: 28, vol: 0.9, bus: out });
+        noise(t, 0.65, { filter: 'lowpass', freq: 6000, freqTo: 250, vol: 0.8, bus: out });
+        for (let i = 0; i < 16; i++) noise(t + 0.05 + Math.random() * 0.7, 0.03 + Math.random() * 0.05, { filter: 'bandpass', freq: 900 + Math.random() * 2400, q: 2, vol: 0.25 + Math.random() * 0.2, bus: out });
+        // the flight: rushing wind and a heroic fanfare
+        const T = Math.max(1.8, dur);
+        noise(t + 0.3, T, { filter: 'bandpass', freq: 350, freqTo: 1700, q: 0.6, vol: 0.4, attack: 0.4, bus: out });
+        [[523, 0.12], [659, 0.12], [784, 0.12], [1047, 0.32], [784, 0.12], [1047, 0.5]].reduce((at, [fq, d]) => { tone(fq, t + 0.4 + at, d, { wave: 'p25', vol: 0.11 }); return at + d; }, 0);
+      },
+      drop() {
+        if (!ready()) return; const t = now();
+        const out = ac.createGain(); out.gain.value = 0.55; out.connect(sfxBus);
+        tone(55, t, 0.6, { wave: 'sine', slide: 26, vol: 0.9, bus: out });
+        noise(t, 0.5, { filter: 'lowpass', freq: 1400, freqTo: 80, vol: 0.6, bus: out });
+      },
       milestone() {
         if (!ready()) return; const t = now();
         tone(988, t, 0.09, { wave: 'p25', vol: 0.16 });
@@ -1549,19 +1601,25 @@
     if (!flight.active && flight.hold <= 0 && diff * L > Math.max(W, H) * 2.5) startFlight('soar', mc);
     if (flight.active) {
       flight.t += dt;
-      const k = Math.min(1, flight.t / flight.dur), e = k < 0.5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2;
-      shownF = flight.from + (flight.to - flight.from) * e;
-      flight.lift = Math.min(H * 0.3, R * 4.5) * Math.pow(Math.sin(Math.PI * k), 0.6);
-      moving = 1;
-      // rocket jets from his feet and a sparkle trail behind the boulder
-      if (pose.feetWorld && !reduceMotion) pose.feetWorld.forEach(ft => {
+      const tt = flight.t - flight.smash;                 // a breakthrough starts with smashing the boulder
+      if (tt < 0) { moving = 0; flight.lift = 0; if (!flight.smashed && flight.t > flight.smash * 0.55) smashBoulder(); }
+      const k = Math.max(0, Math.min(1, tt / flight.dur)), e = k < 0.5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2;
+      const superFly = flight.mode === 'superman';
+      if (tt >= 0) {
+        shownF = flight.from + (flight.to - flight.from) * e;
+        flight.lift = Math.min(H * 0.3, R * 4.5) * Math.pow(Math.sin(Math.PI * k), 0.6);
+        moving = 1;
+      }
+      // rocket jets from his feet (not when he's flying on his own) and a sparkle trail behind
+      if (tt >= 0 && !superFly && pose.feetWorld && !reduceMotion) pose.feetWorld.forEach(ft => {
         for (let n = 0; n < 3; n++) flames.push({ x: ft.x + (Math.random() - 0.5) * U * 0.2, y: ft.y, vx: -U * (0.5 + Math.random()), vy: U * (1.5 + Math.random() * 2), life: 0.8, r: U * (0.08 + Math.random() * 0.1) });
       });
       const bc = boulderCenter();
-      for (let n = 0; n < 3; n++) trail.push({ x: bc.x - R * (0.6 + Math.random() * 0.8), y: bc.y + (Math.random() - 0.5) * R * 1.4, life: 1, c: ['#fee761', '#2ce8f5', '#f6757a', '#ffffff'][(Math.random() * 4) | 0] });
+      if (tt >= 0) for (let n = 0; n < (superFly ? 5 : 3); n++) trail.push({ x: bc.x - R * (0.6 + Math.random() * 0.8), y: bc.y + (Math.random() - 0.5) * R * 1.4, life: 1, c: ['#fee761', '#2ce8f5', '#f6757a', '#ffffff'][(Math.random() * 4) | 0] });
       if (k >= 1) {
-        flight.active = false; flight.lift = 0; flight.hold = 1.4;
+        flight.active = false; flight.lift = 0; flight.hold = 1.4; flight.endedAt = performance.now();
         Sound.land();
+        if (superFly) { flight.dropT = 0.85; flight.hold = 1.9; }   // a fresh boulder falls into his hands
         const f = frameAt(boulderS());
         rings.push({ x: f.x, y: f.y, r: R * 0.5, life: 1.2, big: true });
         power.shake = U * 0.8;
@@ -1573,6 +1631,10 @@
     else if (diff * L < -1) { shownF = Math.max(targetF, shownF - Math.max(U * 0.7, Math.min(-diff * L * 0.6, Math.max(U * 6, -diff * L * 0.3))) * dt / L); moving = -1; }
     else moving = 0;
     trail.forEach(t => { t.x -= U * 0.6 * dt; t.life -= dt * 1.6; });
+    // A new boulder dropping in after a breakthrough landing, and flying rock debris
+    if (flight.dropT > 0) { const was = flight.dropT; flight.dropT = Math.max(0, flight.dropT - dt); if (was > 0.12 && flight.dropT <= 0.12) boulderLanded(); }
+    debris.forEach(d => { d.x += d.vx * dt; d.y += d.vy * dt; d.vy += H * 1.6 * dt; d.rot += d.vr * dt; d.life -= dt * 0.55; });
+    debris = debris.filter(d => d.life > 0);
     // Fireworks and the celebration flash
     flashT = Math.max(0, flashT - dt);
     fireworks.forEach(f => {
@@ -1992,7 +2054,8 @@
     drawGround(p);
     drawAura(time);
     drawBoulder(p);
-    drawClimberRetro(time, p);
+    if (flight.active && flight.mode === 'superman' && flight.smashed && flight.t >= flight.smash) drawSuperheroRetro(time, p); else drawClimberRetro(time, p);
+    drawDebris();
     drawFire(time);
     drawPowerFx(time);
     drawFireworks();
@@ -2173,6 +2236,96 @@
     if (moving && !reduceMotion && power.superLevel < 0.5 && Math.floor(time / 420) % 2) {
       ctx.fillStyle = '#2ce8f5'; ctx.fillRect(wx(hx - hr - 1), wy(hy + 1), pxs, pxs);
     }
+  }
+
+  // ---------- Breakthrough: flying-hero pose and smashed rock debris ----------
+  function drawDebris() {
+    if (!debris.length) return;
+    debris.forEach(d => {
+      ctx.save(); ctx.translate(d.x, d.y); ctx.rotate(d.rot); ctx.globalAlpha = Math.min(1, d.life * 1.5);
+      ctx.fillStyle = '#181425'; ctx.fillRect(-d.s / 2 - 2, -d.s / 2 - 2, d.s + 4, d.s + 4);
+      ctx.fillStyle = '#8b9bb4'; ctx.fillRect(-d.s / 2, -d.s / 2, d.s, d.s);
+      ctx.fillStyle = '#c0cbdc'; ctx.fillRect(-d.s / 2, -d.s / 2, d.s * 0.55, d.s * 0.4);
+      ctx.fillStyle = '#5a6988'; ctx.fillRect(d.s * 0.1, d.s * 0.1, d.s * 0.4, d.s * 0.4);
+      ctx.restore();
+    });
+    ctx.globalAlpha = 1;
+  }
+  function drawSuperheroRetro(time, p) {
+    if (!pxs) return;
+    const c = boulderCenter(), f = frameAt(boulderS());
+    // Body points along the direction of travel: tilted up on take-off, level mid-flight, nosing down to land
+    const k = Math.max(0, Math.min(1, (flight.t - flight.smash) / flight.dur));
+    let dx = f.tx, dy = f.ty - 0.55 * Math.cos(Math.PI * k);
+    const m = Math.hypot(dx, dy) || 1; dx /= m; dy /= m;
+    const nx = dy, ny = -dx;                                   // the "back" side of the body
+    const S = 1.3;                                              // overall size of the flying figure
+    const at = (a, b) => ({ x: c.x + (dx * a + nx * b) * S, y: c.y + (dy * a + ny * b) * S });
+    const wob = Math.sin(time / 90) * U * 0.04;
+    // head up and looking ahead, lead fist punched out in front, other arm tucked under, one leg straight and one bent
+    const sh = at(U * 0.5, 0), hip = at(-U * 0.45, 0), head = at(U * 0.98, U * 0.3);
+    const fist = at(U * 1.95, -U * 0.02), elbowF = at(U * 1.25, -U * 0.05);
+    const backHand = at(-U * 0.25, -U * 0.48), backElbow = at(U * 0.2, -U * 0.45);
+    const knee1 = at(-U * 1.1, U * 0.12 + wob), foot1 = at(-U * 1.75, U * 0.22 + wob);
+    const knee2 = at(-U * 1.0, -U * 0.22 - wob), foot2 = at(-U * 1.42, -U * 0.72 - wob);
+    pose.feetWorld = [foot1, foot2]; pose.core = { x: c.x, y: c.y };
+    const gold = power.superLevel > 0.3 && Math.floor(time / 90) % 3 !== 0;
+    const COL = gold
+      ? { dark: '#b86f50', skin: '#feae34', light: '#fee761', hair: '#733e39', cloth: '#be4a2f', foot: '#733e39' }
+      : { dark: '#733e39', skin: '#b86f50', light: '#e4a672', hair: '#3e2731', cloth: '#3e2731', foot: '#181425' };
+    const cells = new Map();
+    const put = (x, y, col) => cells.set(x + ',' + y, [x, y, col]);
+    const G = pt => ({ x: (pt.x - cam.x) / pxs, y: (pt.y - cam.y) / pxs });
+    const blob = (x, y, r, col) => { for (let j = -r; j <= r; j++) for (let i = -r; i <= r; i++) if (i * i + j * j <= r * r + r) put(x + i, y + j, col); };
+    const line = (a, b, w, col) => {
+      const A = G(a), B = G(b), n = Math.max(1, Math.ceil(Math.hypot(B.x - A.x, B.y - A.y) * 2));
+      for (let s = 0; s <= n; s++) {
+        const x = Math.round(A.x + (B.x - A.x) * s / n), y = Math.round(A.y + (B.y - A.y) * s / n);
+        if (w <= 1) put(x, y, col); else if (w === 2) { put(x, y, col); put(x + 1, y, col); put(x, y + 1, col); put(x + 1, y + 1, col); } else blob(x, y, 1, col);
+      }
+    };
+    const fillPoly = (pts, col) => {
+      const P = pts.map(G);
+      const x0 = Math.floor(Math.min(...P.map(q => q.x))), x1 = Math.ceil(Math.max(...P.map(q => q.x)));
+      const y0 = Math.floor(Math.min(...P.map(q => q.y))), y1 = Math.ceil(Math.max(...P.map(q => q.y)));
+      for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
+        let inside = false;
+        for (let i = 0, j = P.length - 1; i < P.length; j = i++) {
+          const a = P[i], b = P[j];
+          if ((a.y > y) !== (b.y > y) && x < (b.x - a.x) * (y - a.y) / (b.y - a.y) + a.x) inside = !inside;
+        }
+        if (inside) put(x, y, col);
+      }
+    };
+    // far leg and tucked arm in shadow
+    line(hip, knee2, 3, COL.dark); line(at(-U * 0.5, -U * 0.12), at(-U * 0.95, -U * 0.26 - wob), 3, COL.dark); line(knee2, foot2, 3, COL.dark);
+    line(sh, backElbow, 3, COL.dark); line(backElbow, backHand, 2, COL.dark);
+    // torso, broad at the shoulders
+    fillPoly([at(U * 0.62, U * 0.4), at(U * 0.62, -U * 0.36), at(U * 0.2, -U * 0.34), at(-U * 0.48, -U * 0.22), at(-U * 0.48, U * 0.24), at(U * 0.2, U * 0.4)], COL.skin);
+    fillPoly([at(U * 0.55, U * 0.36), at(U * 0.15, U * 0.36), at(-U * 0.3, U * 0.2), at(U * 0.2, U * 0.12)], COL.light);   // lit back and shoulders
+    line(at(U * 0.35, -U * 0.05), at(-U * 0.3, -U * 0.08), 1, COL.dark);                                                   // muscle shading
+    fillPoly([at(-U * 0.32, U * 0.27), at(-U * 0.32, -U * 0.25), at(-U * 0.68, -U * 0.22), at(-U * 0.68, U * 0.26)], COL.cloth);
+    // near leg, straight out behind
+    line(hip, knee1, 3, COL.skin); line(at(-U * 0.5, U * 0.16), at(-U * 1.05, U * 0.2 + wob), 3, COL.skin); line(knee1, foot1, 3, COL.skin);
+    line(at(-U * 0.55, U * 0.22), at(-U * 1.0, U * 0.24 + wob), 1, COL.light);
+    line(foot1, at(-U * 1.95, U * 0.24 + wob), 2, COL.foot); line(foot2, at(-U * 1.5, -U * 0.92 - wob), 2, COL.foot);
+    // head with hair at the back
+    const H0 = G(head), hx = Math.round(H0.x), hy = Math.round(H0.y), hr = Math.max(3, Math.round(U * 0.27 * S / pxs));
+    line(at(U * 0.55, U * 0.12), head, 3, COL.skin);
+    blob(hx, hy, hr, COL.skin);
+    for (let a = 0.6; a <= 2.6; a += 0.3) {
+      const ang = Math.atan2(dy, dx) + Math.PI - 0.6 + a * 0.6;
+      put(hx + Math.round(Math.cos(ang) * hr), hy + Math.round(Math.sin(ang) * hr), COL.hair);
+    }
+    // lead arm punching forward, fist first
+    line(at(U * 0.55, -U * 0.12), elbowF, 3, COL.skin); line(elbowF, fist, 3, COL.light);
+    const FI = G(fist); blob(Math.round(FI.x), Math.round(FI.y), 2, COL.light);
+    // outline, then fill
+    const outline = [];
+    cells.forEach(([x, y]) => [[1, 0], [-1, 0], [0, 1], [0, -1]].forEach(([i, j]) => { if (!cells.has((x + i) + ',' + (y + j))) outline.push([x + i, y + j]); }));
+    const wx = x => cam.x + x * pxs, wy = y => cam.y + y * pxs;
+    ctx.fillStyle = '#181425'; outline.forEach(([x, y]) => ctx.fillRect(wx(x), wy(y), pxs, pxs));
+    cells.forEach(([x, y, col]) => { ctx.fillStyle = col; ctx.fillRect(wx(x), wy(y), pxs, pxs); });
   }
 
   function drawAura(time) {
@@ -2574,7 +2727,9 @@
   }
 
   function drawBoulder(p) {
+    if (flight.active && flight.smashed) return;            // in pieces during a breakthrough flight
     const s = boulderS(), c = boulderCenter(), ang = s / R;
+    if (flight.dropT > 0.12) c.y -= H * 0.9 * Math.pow((flight.dropT - 0.12) / 0.73, 2);   // the new boulder falling into place
     // contact shadow
     const f = frameAt(s);
     ctx.fillStyle = 'rgba(8,5,20,0.22)';
