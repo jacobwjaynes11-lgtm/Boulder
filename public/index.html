@@ -74,6 +74,11 @@
   .mode i { width: 7px; height: 7px; border-radius: 50%; background: #8d88a8; display: inline-block; }
   .mode.live i { background: #4fd99c; box-shadow: 0 0 10px #4fd99c; }
   .mode.demo i { background: #f0b75a; box-shadow: 0 0 10px #f0b75a; }
+  .sound-ctl { position: absolute; right: 14px; bottom: 14px; display: flex; gap: 8px; z-index: 2; }
+  .snd { font-family: "Press Start 2P", ui-monospace, monospace; font-size: 9px; font-weight: 400; padding: 9px 10px; border-radius: 4px;
+    background: rgba(24, 20, 37, .78); color: #c0cbdc; border: 2px solid #5a6988; cursor: pointer; }
+  .snd.on { color: #fee761; border-color: #feae34; }
+  .snd:focus-visible { outline: 3px solid #fee761; outline-offset: 2px; }
 
   aside { background: var(--panel); border: 1px solid var(--line); border-radius: 22px; overflow: hidden; }
   aside section { padding: 20px 22px; }
@@ -285,6 +290,7 @@
       <div class="sub" id="sub">Market cap. Next milestone $3K</div>
     </div>
     <div class="mode" id="mode"><i></i><span>Waiting</span></div>
+    <div class="sound-ctl"><button class="snd" id="sfxBtn" aria-pressed="false">Sound: off</button><button class="snd" id="musicBtn" aria-pressed="false">Music: off</button></div>
   </section>
 
   <aside>
@@ -657,8 +663,9 @@
   // ---------- Market cap ----------
   function setMarketCap(v, silent) {
     if (!(v > 0)) return;
-    const prev = mc;
+    const prev = mc, prevAth = ath;
     mc = v; if (mc > ath) ath = mc;
+    if (!silent && prevAth > 0 && nextMilestone(prevAth) <= ath) Sound.milestone();
     if (silent) { shownF = fracFor(mc); mcHistory = []; }
     else {
       const now = performance.now() / 1000;
@@ -689,6 +696,7 @@
         text: (type === 'buy' ? '+' : '−') + fmtSol(sol) + ' SOL', color: type === 'buy' ? '#7cf2bd' : '#ff8f8f'
       });
     }
+    if (type === 'buy') Sound.push(sol); else Sound.sell(sol);
     addFeed(type, type === 'buy' ? 'Buy' : 'Sell', fmtSol(sol) + ' SOL', shortAddr(wallet), sig);
     updateStats(); save();
   }
@@ -702,7 +710,8 @@
     }
   }
   function startSuper(sol) {
-    power.superT = Math.min(15, 6 + (sol - SUPER_SOL)); // 6s, plus 1s per extra SOL, up to 15s
+    power.superT = Math.min(15, 6 + (sol - SUPER_SOL));
+    Sound.powerUp(); // 6s, plus 1s per extra SOL, up to 15s
     if (!flight.active) startHeave(true);
     if (L > 1 && !flight.active) {
       const b = boulderCenter();
@@ -710,6 +719,7 @@
     }
   }
   function heaveBurst() {
+    Sound.heave();
     const b = boulderCenter(), f = frameAt(boulderS());
     const big = power.superLevel > 0.2 || power.superT > 0;
     rings.push({ x: b.x - f.tx * R, y: b.y - f.ty * R, r: R * 0.6, life: 1, big });
@@ -730,6 +740,7 @@
     if (to - shownF < 0.004) return;
     Object.assign(flight, { active: true, t: 0, from: shownF, to, hold: 0, dur: Math.max(1.8, Math.min(5, 1.6 + Math.log2(1 + (to - shownF) * L / SEG) * 0.9)) });
     power.heaveT = -1;
+    Sound.launch();
     const b = boulderCenter();
     floaters.push({ x: W * 0.5, y: H * 0.26, screen: true, life: 2.4, text: (kind === 'whale' ? 'Whale! ' : 'Soaring! ') + 'Flying to ' + usd(destMc), color: '#fee761', size: 26 });
     rings.push({ x: b.x, y: b.y + R, r: R * 0.8, life: 1.2, big: true });
@@ -746,6 +757,7 @@
     updateStats();
   }
   function burnEvent(amount) {
+    Sound.burn();
     fireHold = 2.5; // minimum burn time; it keeps going while the mountain is still shrinking
     addFeed('burn', 'Burn', compact(amount) + ' tokens', 'supply now ' + compact(supply));
     if (!W) return;
@@ -1272,6 +1284,188 @@
     });
   }
 
+  // ---------- Sound: an original chiptune soundtrack and retro effects, synthesized live (no audio files) ----------
+  const Sound = (() => {
+    let ac = null, master, musicBus, sfxBus, noiseBuf, pulse12, pulse25;
+    let pref = {}; try { pref = JSON.parse(localStorage.getItem('boulder:sound') || '{}'); } catch (e) {}
+    let sfxOn = !!pref.sfx, musicOn = !!pref.music, energy = 0.2, lastStep = 0, timer = null, step = 0, nextTime = 0;
+    const save = () => { try { localStorage.setItem('boulder:sound', JSON.stringify({ sfx: sfxOn, music: musicOn })); } catch (e) {} };
+    const mtof = m => 440 * Math.pow(2, (m - 69) / 12);
+
+    function pulseWave(duty) {
+      const n = 40, re = new Float32Array(n), im = new Float32Array(n);
+      for (let k = 1; k < n; k++) re[k] = (2 / (k * Math.PI)) * Math.sin(Math.PI * k * duty);
+      return ac.createPeriodicWave(re, im);
+    }
+    function init() {
+      if (ac) { if (ac.state === 'suspended') ac.resume(); return true; }
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return false;
+      ac = new AC();
+      const comp = ac.createDynamicsCompressor(); comp.threshold.value = -16; comp.ratio.value = 4;
+      master = ac.createGain(); master.gain.value = 0.9; master.connect(comp); comp.connect(ac.destination);
+      musicBus = ac.createGain(); musicBus.gain.value = 0; musicBus.connect(master);
+      sfxBus = ac.createGain(); sfxBus.gain.value = 0.6; sfxBus.connect(master);
+      noiseBuf = ac.createBuffer(1, ac.sampleRate, ac.sampleRate);
+      const d = noiseBuf.getChannelData(0); for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+      pulse12 = pulseWave(0.125); pulse25 = pulseWave(0.25);
+      return true;
+    }
+    // One note: square-ish pulse, triangle or sine, with an optional pitch slide
+    function tone(freq, t, dur, o = {}) {
+      const osc = ac.createOscillator(), g = ac.createGain();
+      if (o.wave === 'p12') osc.setPeriodicWave(pulse12); else if (o.wave === 'p25') osc.setPeriodicWave(pulse25); else osc.type = o.wave || 'square';
+      osc.frequency.setValueAtTime(freq, t);
+      if (o.slide) osc.frequency.exponentialRampToValueAtTime(Math.max(20, o.slide), t + dur);
+      const v = o.vol ?? 0.2;
+      g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(v, t + 0.006);
+      g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+      osc.connect(g); g.connect(o.bus || sfxBus); osc.start(t); osc.stop(t + dur + 0.02);
+    }
+    // Filtered noise: drums, dust, fire, wind
+    function noise(t, dur, o = {}) {
+      const src = ac.createBufferSource(), f = ac.createBiquadFilter(), g = ac.createGain();
+      src.buffer = noiseBuf; src.loop = true;
+      f.type = o.filter || 'lowpass'; f.frequency.setValueAtTime(o.freq || 1200, t); f.Q.value = o.q || 0.8;
+      if (o.freqTo) f.frequency.exponentialRampToValueAtTime(o.freqTo, t + dur);
+      const v = o.vol ?? 0.2;
+      g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(v, t + (o.attack || 0.005));
+      g.gain.exponentialRampToValueAtTime(0.0001, t + dur);
+      src.connect(f); f.connect(g); g.connect(o.bus || sfxBus); src.start(t, Math.random()); src.stop(t + dur + 0.02);
+    }
+    const ready = () => sfxOn && ac && ac.state === 'running';
+    const now = () => ac.currentTime + 0.01;
+
+    // ----- Music: 8 bars in A minor (Am, F, C, G), bass + arpeggio + lead, drums join when the market moves -----
+    const BPM = 116;
+    const BASS = [45, 41, 48, 43];
+    const ARP = [[69, 72, 76, 81], [65, 69, 72, 77], [67, 72, 76, 79], [67, 71, 74, 79]];
+    const LEAD = [
+      { 0: 76, 3: 74, 4: 72, 6: 69, 8: 72, 10: 74, 12: 76, 14: 79 },
+      { 0: 77, 3: 76, 4: 74, 6: 72, 8: 69, 11: 72, 12: 74 },
+      { 0: 76, 2: 72, 4: 79, 6: 76, 8: 84, 10: 79, 12: 76, 14: 74 },
+      { 0: 74, 3: 71, 4: 67, 6: 71, 8: 74, 12: 79, 14: 83 },
+      { 0: 81, 4: 79, 6: 76, 8: 79, 12: 76, 14: 74 },
+      { 0: 77, 2: 79, 4: 81, 8: 77, 12: 72 },
+      { 0: 79, 4: 76, 6: 79, 8: 84, 10: 83, 12: 79 },
+      { 0: 83, 4: 79, 8: 74, 10: 79, 12: 83, 14: 86 },
+    ];
+    function playStep(i, t, spb) {
+      const bar = Math.floor(i / 16) % 8, s = i % 16, ch = bar % 4, mb = musicBus;
+      if ([0, 3, 6, 8, 11, 14].includes(s)) tone(mtof(BASS[ch] + (s === 6 || s === 14 ? 12 : 0)), t, spb * 1.7, { wave: 'triangle', vol: 0.3, bus: mb });
+      if (s % 2 === 0) tone(mtof(ARP[ch][(s / 2) % 4]), t, spb * 0.9, { wave: 'p12', vol: 0.045, bus: mb });
+      const note = LEAD[bar][s];
+      if (note) {
+        let len = 1; while (len < 4 && LEAD[bar][s + len] === undefined && s + len < 16) len++;
+        tone(mtof(note), t, spb * len * 0.92, { wave: 'p25', vol: 0.085, bus: mb });
+      }
+      if (energy > 0.3) {
+        if (s % 8 === 0) tone(130, t, 0.13, { wave: 'sine', slide: 45, vol: 0.55, bus: mb });
+        if (s % 8 === 4) noise(t, 0.11, { filter: 'bandpass', freq: 1900, q: 0.9, vol: 0.2, bus: mb });
+      }
+      if (energy > 0.55 && s % 2 === 1) noise(t, 0.03, { filter: 'highpass', freq: 7500, vol: 0.06, bus: mb });
+    }
+    function schedule() {
+      if (!ac || ac.state !== 'running') return;
+      const spb = 60 / (BPM * (energy > 0.85 ? 1.12 : 1)) / 4;
+      if (nextTime < ac.currentTime) nextTime = ac.currentTime + 0.05;
+      while (nextTime < ac.currentTime + 0.15) { playStep(step, nextTime, spb); nextTime += spb; step = (step + 1) % 128; }
+    }
+    function startMusic() {
+      if (!ac) return;
+      if (!timer) { step = 0; nextTime = ac.currentTime + 0.1; timer = setInterval(schedule, 25); }
+      musicBus.gain.cancelScheduledValues(ac.currentTime);
+      musicBus.gain.setTargetAtTime(0.22, ac.currentTime, 0.4);
+    }
+    function stopMusic() {
+      if (!ac) return;
+      musicBus.gain.cancelScheduledValues(ac.currentTime);
+      musicBus.gain.setTargetAtTime(0, ac.currentTime, 0.15);
+      setTimeout(() => { if (!musicOn) { clearInterval(timer); timer = null; } }, 600);
+    }
+
+    // ----- Effects -----
+    const fx = {
+      push(sol) {
+        if (!ready()) return; const t = now(), k = Math.min(1, 0.4 + sol * 0.2);
+        tone(120, t, 0.14, { wave: 'p25', slide: 70, vol: 0.22 * k });
+        tone(523 * (1 + Math.min(sol, 3) * 0.1), t + 0.02, 0.09, { wave: 'p12', slide: 880, vol: 0.12 });
+      },
+      sell(sol) {
+        if (!ready()) return; const t = now();
+        noise(t, 0.55, { freq: 900, freqTo: 180, vol: 0.22 + Math.min(sol, 3) * 0.05 });
+        tone(260, t, 0.4, { wave: 'triangle', slide: 80, vol: 0.14 });
+      },
+      step() {
+        if (!ready()) return; const ms = performance.now(); if (ms - lastStep < 140) return; lastStep = ms;
+        noise(now(), 0.045, { filter: 'bandpass', freq: 1600 + Math.random() * 600, q: 1.5, vol: 0.05 });
+      },
+      heave() {
+        if (!ready()) return; const t = now();
+        tone(90, t, 0.3, { wave: 'p25', slide: 40, vol: 0.3 });
+        noise(t, 0.35, { freq: 2200, freqTo: 250, vol: 0.32 });
+        tone(392, t + 0.03, 0.12, { wave: 'p25', slide: 784, vol: 0.12 });
+      },
+      powerUp() {
+        if (!ready()) return; const t = now();
+        [523, 659, 784, 1047, 1319, 1568].forEach((f, i) => tone(f, t + i * 0.055, 0.12, { wave: 'p25', vol: 0.13 }));
+        tone(2093, t + 0.33, 0.45, { wave: 'p12', vol: 0.08 });
+      },
+      launch() {
+        if (!ready()) return; const t = now();
+        noise(t, 1.8, { filter: 'bandpass', freq: 250, freqTo: 3000, q: 1.1, vol: 0.32, attack: 0.25 });
+        [392, 523, 659, 784, 1047].forEach((f, i) => tone(f, t + i * 0.08, 0.16, { wave: 'p25', vol: 0.12 }));
+      },
+      land() {
+        if (!ready()) return; const t = now();
+        tone(70, t, 0.5, { wave: 'triangle', slide: 30, vol: 0.45 });
+        noise(t, 0.5, { freq: 1400, freqTo: 90, vol: 0.4 });
+      },
+      burn() {
+        if (!ready()) return; const t = now();
+        noise(t, 1.1, { freq: 300, freqTo: 1800, vol: 0.22, attack: 0.15 });
+        for (let i = 0; i < 16; i++) noise(t + Math.random() * 1.3, 0.025, { filter: 'highpass', freq: 2500 + Math.random() * 3000, vol: 0.12 });
+      },
+      milestone() {
+        if (!ready()) return; const t = now();
+        tone(988, t, 0.09, { wave: 'p25', vol: 0.16 });
+        tone(1319, t + 0.09, 0.4, { wave: 'p25', vol: 0.16 });
+        [1568, 2093].forEach((f, i) => tone(f, t + 0.25 + i * 0.07, 0.25, { wave: 'p12', vol: 0.07 }));
+      },
+    };
+
+    // ----- Controls -----
+    function paint() {
+      const sb = document.getElementById('sfxBtn'), mb = document.getElementById('musicBtn');
+      if (sb) { sb.textContent = 'Sound: ' + (sfxOn ? 'on' : 'off'); sb.classList.toggle('on', sfxOn); sb.setAttribute('aria-pressed', sfxOn); }
+      if (mb) { mb.textContent = 'Music: ' + (musicOn ? 'on' : 'off'); mb.classList.toggle('on', musicOn); mb.setAttribute('aria-pressed', musicOn); }
+    }
+    function apply() {
+      if (!(sfxOn || musicOn)) { if (ac) stopMusic(); return; }
+      if (!init()) return;
+      if (musicOn) startMusic(); else stopMusic();
+    }
+    function wire() {
+      const sb = document.getElementById('sfxBtn'), mb = document.getElementById('musicBtn');
+      if (sb) sb.onclick = () => { sfxOn = !sfxOn; save(); paint(); apply(); if (sfxOn) setTimeout(() => fx.milestone(), 60); };
+      if (mb) mb.onclick = () => { musicOn = !musicOn; save(); paint(); apply(); };
+      paint();
+      // Browsers only allow audio after a tap or click, so saved "on" settings resume on the first interaction
+      const unlock = () => { apply(); window.removeEventListener('pointerdown', unlock); window.removeEventListener('keydown', unlock); };
+      if (sfxOn || musicOn) { window.addEventListener('pointerdown', unlock); window.addEventListener('keydown', unlock); }
+      document.addEventListener('visibilitychange', () => {
+        if (!ac) return;
+        if (document.hidden) ac.suspend(); else if (sfxOn || musicOn) ac.resume();
+      });
+    }
+    return {
+      ...fx, wire,
+      // Music gets busier when the boulder is moving, a big buy hits, or he's flying
+      tick(dt, target) { energy += (target - energy) * Math.min(1, dt * 1.5); },
+    };
+  })();
+  Sound.wire();
+
   // ---------- Update ----------
   const altEl = $('#alt'), subEl = $('#sub');
   let lastAltText = '', lastSub = '';
@@ -1325,6 +1519,7 @@
       for (let n = 0; n < 3; n++) trail.push({ x: bc.x - R * (0.6 + Math.random() * 0.8), y: bc.y + (Math.random() - 0.5) * R * 1.4, life: 1, c: ['#fee761', '#2ce8f5', '#f6757a', '#ffffff'][(Math.random() * 4) | 0] });
       if (k >= 1) {
         flight.active = false; flight.lift = 0; flight.hold = 1.4;
+        Sound.land();
         const f = frameAt(boulderS());
         rings.push({ x: f.x, y: f.y, r: R * 0.5, life: 1.2, big: true });
         power.shake = U * 0.8;
@@ -1476,6 +1671,7 @@
         if (need) {
           const dur = moving === 1 ? Math.max(0.16, Math.min(0.36, (S * 1.4) / Math.max(speed, 1))) : 0.38;
           rear.sw = { from: rear.u * L, t: 0, dur };
+          if (moving === 1) Sound.step();
           if (moving === 1) {
             pose.pulse = 1;
             const fp = frameAt(rear.u * L);
@@ -2316,7 +2512,7 @@
   let last = performance.now();
   function loop(now) {
     const dt = Math.min(0.05, (now - last) / 1000); last = now;
-    if (W && H) { update(dt); draw(now); }
+    if (W && H) { update(dt); draw(now); Sound.tick(dt, flight.active || power.superLevel > 0.5 ? 1 : moving === 1 ? 0.6 : moving === -1 ? 0.45 : 0.2); }
     requestAnimationFrame(loop);
   }
 
