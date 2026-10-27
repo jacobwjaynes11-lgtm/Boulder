@@ -106,7 +106,16 @@ export class LiveCoin {
         const batch = await Promise.all(toParse.slice(i, i + 4).map(sig => parseTrade(env, sig, s.mint).catch(() => null)));
         parsed.push(...batch);
       }
-      const newTrades = parsed.filter(Boolean).map(t => ({ ...t, mc: s.solUsd && s.supply ? t.priceSol * s.supply * s.solUsd : 0 }));
+      // Market cap from each trade's price. Tiny trades (fees dominate) and wild outliers are not trusted for price;
+      // they still count as buys/sells for the game, they just don't move the market cap.
+      const toMc = t => (s.solUsd && s.supply ? t.priceSol * s.supply * s.solUsd : 0);
+      const pool = [...parsed.filter(Boolean), ...s.trades].filter(t => t.sol >= 0.01).map(toMc).filter(v => v > 0).sort((x, y) => x - y);
+      const ref = pool.length ? pool[Math.floor(pool.length / 2)] : 0;
+      const newTrades = parsed.filter(Boolean).map(t => {
+        const v = toMc(t);
+        const ok = v > 0 && t.sol >= 0.01 && (!ref || (v > ref * 0.4 && v < ref * 2.5));
+        return { ...t, mc: ok ? v : 0 };
+      });
       if (newTrades.length) {
         s.trades = [...newTrades, ...s.trades].sort((a, b) => (b.slot - a.slot) || 0).slice(0, KEEP_TRADES);
         const latest = s.trades.find(t => t.mc > 0);
