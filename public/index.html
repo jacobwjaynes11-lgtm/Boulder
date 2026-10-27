@@ -742,7 +742,7 @@
     if (to - shownF < 0.004) return;
     Object.assign(flight, { active: true, t: 0, from: shownF, to, hold: 0, dur: Math.max(1.8, Math.min(5, 1.6 + Math.log2(1 + (to - shownF) * L / SEG) * 0.9)) });
     power.heaveT = -1;
-    Sound.launch();
+    Sound.launch(flight.dur);
     const b = boulderCenter();
     floaters.push({ x: W * 0.5, y: H * 0.26, screen: true, life: 2.4, text: (kind === 'whale' ? 'Whale! ' : 'Soaring! ') + 'Flying to ' + usd(destMc), color: '#fee761', size: 26 });
     rings.push({ x: b.x, y: b.y + R, r: R * 0.8, life: 1.2, big: true });
@@ -1420,10 +1420,43 @@
         [523, 659, 784, 1047, 1319, 1568].forEach((f, i) => tone(f, t + i * 0.055, 0.12, { wave: 'p25', vol: 0.13 }));
         tone(2093, t + 0.33, 0.45, { wave: 'p12', vol: 0.08 });
       },
-      launch() {
-        if (!ready()) return; const t = now();
-        noise(t, 1.8, { filter: 'bandpass', freq: 250, freqTo: 3000, q: 1.1, vol: 0.32, attack: 0.25 });
-        [392, 523, 659, 784, 1047].forEach((f, i) => tone(f, t + i * 0.08, 0.16, { wave: 'p25', vol: 0.12 }));
+      // Rocket launch: ignition blast, a gritty rumbling roar for the whole flight, a rising whoosh and engine crackle
+      launch(dur = 3) {
+        if (!ready()) return;
+        const t = now(), T = Math.max(1.8, dur);
+        const out = ac.createGain(); out.gain.value = 0.5; out.connect(sfxBus);
+        const grit = ac.createWaveShaper(); grit.oversample = '2x';
+        const curve = new Float32Array(1024), k = 6;
+        for (let i = 0; i < 1024; i++) { const x = i / 511.5 - 1; curve[i] = ((1 + k) * x) / (1 + k * Math.abs(x)); }
+        grit.curve = curve; grit.connect(out);
+        // 1) ignition: a deep boom and a crack of fire
+        tone(60, t, 0.8, { wave: 'sine', slide: 26, vol: 0.9, bus: out });
+        noise(t, 0.45, { filter: 'lowpass', freq: 5000, freqTo: 350, vol: 0.7, bus: out });
+        // 2) the roar: low noise that rumbles (tremolo) and swells, held through the flight, fading as he lands
+        const src = ac.createBufferSource(); src.buffer = noiseBuf; src.loop = true;
+        const lp = ac.createBiquadFilter(); lp.type = 'lowpass'; lp.Q.value = 0.7;
+        lp.frequency.setValueAtTime(420, t); lp.frequency.linearRampToValueAtTime(950, t + T * 0.5); lp.frequency.linearRampToValueAtTime(600, t + T);
+        const trem = ac.createGain(); trem.gain.value = 0.75;
+        const lfo = ac.createOscillator(), lfoAmt = ac.createGain(); lfo.frequency.value = 23; lfoAmt.gain.value = 0.25;
+        lfo.connect(lfoAmt); lfoAmt.connect(trem.gain);
+        const env = ac.createGain();
+        env.gain.setValueAtTime(0.0001, t); env.gain.exponentialRampToValueAtTime(0.95, t + 0.3);
+        env.gain.setValueAtTime(0.95, t + T * 0.6); env.gain.exponentialRampToValueAtTime(0.0001, t + T + 0.35);
+        src.connect(lp); lp.connect(trem); trem.connect(env); env.connect(grit);
+        src.start(t, Math.random()); lfo.start(t); src.stop(t + T + 0.4); lfo.stop(t + T + 0.4);
+        // 3) sub rumble you feel more than hear
+        const sub = ac.createOscillator(), subG = ac.createGain(); sub.type = 'triangle';
+        sub.frequency.setValueAtTime(48, t); sub.frequency.linearRampToValueAtTime(38, t + T);
+        subG.gain.setValueAtTime(0.0001, t); subG.gain.exponentialRampToValueAtTime(0.55, t + 0.25);
+        subG.gain.setValueAtTime(0.55, t + T * 0.6); subG.gain.exponentialRampToValueAtTime(0.0001, t + T + 0.3);
+        sub.connect(subG); subG.connect(out); sub.start(t); sub.stop(t + T + 0.35);
+        // 4) rising whoosh as he picks up speed
+        noise(t + 0.1, T * 0.9, { filter: 'bandpass', freq: 180, freqTo: 2400, q: 0.9, vol: 0.5, attack: 0.5, bus: out });
+        // 5) engine crackle
+        const pops = Math.round(14 * T);
+        for (let i = 0; i < pops; i++) noise(t + 0.15 + Math.random() * T * 0.85, 0.015 + Math.random() * 0.03, { filter: 'highpass', freq: 1600 + Math.random() * 2600, vol: 0.15 + Math.random() * 0.2, bus: out });
+        // 6) a short retro fanfare over the top
+        [523, 659, 784, 1047].forEach((f, i) => tone(f, t + 0.5 + i * 0.09, 0.16, { wave: 'p25', vol: 0.07 }));
       },
       land() {
         if (!ready()) return; const t = now();
