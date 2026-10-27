@@ -1,0 +1,2299 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Push the Boulder</title>
+<meta name="description" content="A meme coin with a game strapped to it: every buy pushes Sisyphus up the mountain, every sell slides him back, and creator fees burn the supply.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #ebe5ef; --panel: #f8f5fa; --ink: #221b36; --muted: #625a78; --line: #dad2e3;
+    --buy: #157a52; --sell: #b8323c; --burn: #b4520a; --accent: #3f2a73; --accent-ink: #fbf6ec;
+    --display: "Outfit", system-ui, -apple-system, "Segoe UI", sans-serif;
+    color-scheme: light;
+    box-sizing: border-box;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #100d20; --panel: #1a1630; --ink: #f1ecf7; --muted: #a59dbd; --line: #2e2848;
+      --buy: #4fd99c; --sell: #ff7a7a; --burn: #ffaa5c; --accent: #f0b75a; --accent-ink: #1a1226;
+      color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #100d20; --panel: #1a1630; --ink: #f1ecf7; --muted: #a59dbd; --line: #2e2848;
+    --buy: #4fd99c; --sell: #ff7a7a; --burn: #ffaa5c; --accent: #f0b75a; --accent-ink: #1a1226;
+    color-scheme: dark;
+  }
+  *, *::before, *::after { box-sizing: inherit; }
+  html, body { margin: 0; }
+  body {
+    background: var(--bg); color: var(--ink);
+    font: 16px/1.5 "Outfit", system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  main {
+    max-width: 1280px; margin: 0 auto; padding: 16px;
+    display: grid; gap: 20px; grid-template-columns: 1fr;
+  }
+  @media (min-width: 960px) {
+    main { grid-template-columns: 1fr 330px; align-items: start; padding: 28px; }
+  }
+
+  .stage {
+    position: relative; border-radius: 22px; overflow: hidden;
+    height: min(72vh, 680px); min-height: 400px; background: #120e2e;
+    box-shadow: 0 30px 60px -30px rgba(20, 10, 50, .55);
+  }
+  canvas { display: block; width: 100%; height: 100%; image-rendering: pixelated; image-rendering: crisp-edges; }
+  #fx { position: absolute; inset: 0; pointer-events: none; image-rendering: auto; }
+  .alt { font-family: "Press Start 2P", ui-monospace, monospace !important; font-weight: 400 !important; font-size: clamp(24px, 4.6vw, 46px) !important; line-height: 1.15 !important; text-shadow: 3px 3px 0 #181425 !important; }
+  .sub, .mode { font-family: "Press Start 2P", ui-monospace, monospace; font-size: 10px !important; letter-spacing: .02em; }
+  .stage { border-radius: 6px !important; image-rendering: pixelated; }
+  .hud {
+    position: absolute; left: 0; right: 0; top: 0; padding: 22px 24px 60px;
+    color: #fff8ec; pointer-events: none;
+    background: linear-gradient(rgba(10, 6, 30, .38), rgba(10, 6, 30, 0));
+  }
+  .alt {
+    font-family: var(--display); font-weight: 700; font-size: clamp(42px, 7.5vw, 76px);
+    line-height: 1; letter-spacing: .01em; text-shadow: 0 2px 24px rgba(10, 6, 30, .5);
+    font-variant-numeric: lining-nums;
+  }
+  .sub { font-size: 15px; opacity: .85; margin-top: 8px; }
+  .mode {
+    position: absolute; right: 18px; top: 20px; font-size: 13px; font-weight: 500;
+    color: #fff8ec; background: rgba(255, 255, 255, .1); border: 1px solid rgba(255, 255, 255, .18);
+    backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px);
+    padding: 5px 12px; border-radius: 999px; display: flex; align-items: center; gap: 7px;
+  }
+  .mode i { width: 7px; height: 7px; border-radius: 50%; background: #8d88a8; display: inline-block; }
+  .mode.live i { background: #4fd99c; box-shadow: 0 0 10px #4fd99c; }
+  .mode.demo i { background: #f0b75a; box-shadow: 0 0 10px #f0b75a; }
+
+  aside { background: var(--panel); border: 1px solid var(--line); border-radius: 22px; overflow: hidden; }
+  aside section { padding: 20px 22px; }
+  aside section + section { border-top: 1px solid var(--line); }
+  h1 { font-family: var(--display); font-weight: 700; font-size: 25px; line-height: 1.15; margin: 0 0 6px; }
+  .lede { color: var(--muted); margin: 0 0 18px; font-size: 15px; max-width: 34ch; }
+  label { display: block; font-size: 14px; font-weight: 500; margin-bottom: 6px; }
+  input {
+    width: 100%; font: inherit; font-size: 14px; padding: 11px 13px; border-radius: 12px;
+    border: 1px solid var(--line); background: var(--bg); color: var(--ink);
+  }
+  .row { display: flex; gap: 8px; margin-top: 10px; flex-wrap: wrap; }
+  button {
+    font: inherit; font-weight: 600; font-size: 14px; border-radius: 12px; padding: 9px 15px; cursor: pointer;
+    border: 1px solid var(--accent); background: var(--accent); color: var(--accent-ink);
+    transition: transform .08s ease;
+  }
+  button:active { transform: translateY(1px); }
+  button.ghost { background: transparent; color: var(--ink); border-color: var(--line); font-weight: 500; }
+  button.buy { background: transparent; color: var(--buy); border-color: currentColor; }
+  button.sell { background: transparent; color: var(--sell); border-color: currentColor; }
+  button.burn { background: transparent; color: var(--burn); border-color: currentColor; }
+  button:focus-visible, input:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+  .status { font-size: 14px; color: var(--muted); margin: 12px 0 0; }
+  .status.err { color: var(--sell); }
+
+  .stats { display: grid; grid-template-columns: 1fr 1fr; gap: 16px 18px; }
+  .stats div { font-size: 13px; color: var(--muted); }
+  .stats b {
+    display: block; font-family: var(--display); font-size: 23px; line-height: 1.25;
+    color: var(--ink); font-weight: 700; font-variant-numeric: lining-nums;
+  }
+  .stats .b b { color: var(--buy); }
+  .stats .s b { color: var(--sell); }
+  .stats .f b { color: var(--burn); }
+
+  h2 { font-family: var(--display); font-size: 17px; font-weight: 700; margin: 0 0 8px; }
+  .feed ol { list-style: none; margin: 0; padding: 0; max-height: 300px; overflow-y: auto; }
+  .feed li {
+    display: grid; grid-template-columns: 46px 1fr auto; gap: 8px; align-items: baseline;
+    padding: 8px 0; border-top: 1px solid var(--line); font-size: 14px;
+  }
+  .feed li:first-child { border-top: 0; }
+  .feed .k { font-weight: 600; }
+  .feed .buy .k { color: var(--buy); }
+  .feed .sell .k { color: var(--sell); }
+  .feed .burn .k { color: var(--burn); }
+  .feed .who { color: var(--muted); font-size: 13px; }
+  .feed a { color: inherit; }
+  .feed .empty { color: var(--muted); font-size: 14px; display: block; border: 0; }
+
+  [hidden] { display: none !important; }
+  /* ---------- Website shell ---------- */
+  html { scroll-behavior: smooth; scroll-padding-top: calc(64px + env(safe-area-inset-top, 0px)); }
+  @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+  .site-header {
+    position: sticky; top: env(safe-area-inset-top, 0px); z-index: 20;
+    background: color-mix(in srgb, var(--bg) 84%, transparent);
+    backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--line);
+  }
+  body::before { content: ""; position: fixed; inset: 0 0 auto; height: env(safe-area-inset-top, 0px); z-index: 21; background: var(--bg); }
+  .site-header .in { max-width: 1280px; margin: 0 auto; padding: 12px 28px; display: flex; align-items: center; gap: 22px; }
+  .brand { font-family: var(--display); font-weight: 700; font-size: 21px; color: var(--ink); text-decoration: none; letter-spacing: .01em; }
+  .nav { display: flex; gap: 20px; margin-left: auto; }
+  .nav a { color: var(--muted); text-decoration: none; font-size: 15px; }
+  .nav a:hover, .nav a:focus-visible { color: var(--ink); }
+  .site-header .btn { margin: 0; }
+  @media (max-width: 760px) { .nav { display: none; } .site-header .btn { margin-left: auto; } .site-header .in { padding: 10px 16px; } }
+
+  .hero { max-width: 1280px; margin: 0 auto; padding: 44px 28px 6px; }
+  .hero h1 { font-family: var(--display); font-weight: 700; font-size: clamp(42px, 7.2vw, 88px); line-height: 1; margin: 0 0 16px; letter-spacing: .005em; }
+  .hero p { max-width: 58ch; color: var(--muted); font-size: 18px; line-height: 1.55; margin: 0 0 22px; }
+  .cta { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+  .cta .btn { margin: 0; }
+  .ca-chip {
+    display: inline-flex; align-items: center; gap: 8px; font-size: 14px; color: var(--muted);
+    border: 1px solid var(--line); border-radius: 12px; padding: 7px 8px 7px 12px; background: var(--panel);
+  }
+  .ca-chip code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--ink); }
+  @media (max-width: 760px) { .hero { padding: 28px 16px 0; } .hero p { font-size: 16px; } }
+
+  .page { max-width: 1280px; margin: 0 auto; padding: 64px 28px; }
+  .page + .page { border-top: 1px solid var(--line); }
+  .page h2.big { font-family: var(--display); font-weight: 700; font-size: clamp(28px, 3.6vw, 42px); line-height: 1.1; margin: 0 0 12px; }
+  .page > p.sub { color: var(--muted); max-width: 62ch; font-size: 17px; margin: 0; }
+  .cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 28px 32px; margin-top: 30px; }
+  .cols h3 { font-family: var(--display); font-weight: 700; font-size: 19px; margin: 0 0 6px; }
+  .cols p { color: var(--muted); margin: 0; }
+  .cols .tag { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 8px; vertical-align: 1px; }
+  .burn-wrap { display: grid; grid-template-columns: 1.2fr 1fr; gap: 40px; align-items: center; }
+  .burn-wrap p { color: var(--muted); font-size: 17px; max-width: 58ch; }
+  .burn-nums { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; background: var(--panel); border: 1px solid var(--line); border-radius: 22px; padding: 26px; }
+  .burn-nums div { color: var(--muted); font-size: 14px; }
+  .burn-nums b { display: block; font-family: var(--display); font-size: clamp(28px, 4vw, 40px); color: var(--ink); line-height: 1.15; }
+  .burn-nums .f b { color: var(--burn); }
+  @media (max-width: 860px) { .burn-wrap { grid-template-columns: 1fr; } }
+  ol.steps { list-style: none; counter-reset: s; padding: 0; margin: 30px 0 0; display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 28px 32px; }
+  ol.steps li { counter-increment: s; }
+  ol.steps li::before { content: counter(s); display: grid; place-items: center; width: 34px; height: 34px; border-radius: 50%; border: 1px solid var(--line); font-family: var(--display); font-weight: 700; margin-bottom: 12px; }
+  ol.steps h3 { font-family: var(--display); font-size: 19px; margin: 0 0 6px; }
+  ol.steps p { color: var(--muted); margin: 0; }
+  .launch-page { max-width: 560px; }
+  .launch-page h2.big { margin-bottom: 8px; }
+  .launch-page .lede { font-size: 17px; max-width: none; }
+  @media (max-width: 760px) { .page { padding: 48px 16px; } }
+
+  /* Burn plan */
+  .plan-list { list-style: none; padding: 0; margin: 30px 0 0; border-top: 1px solid var(--line); }
+  .plan-item { display: grid; grid-template-columns: 130px 1fr auto; gap: 6px 22px; align-items: center; padding: 18px 0; border-bottom: 1px solid var(--line); }
+  .plan-mc { font-family: var(--display); font-weight: 700; font-size: 24px; font-variant-numeric: lining-nums; }
+  .plan-item h3 { margin: 0 0 2px; font-size: 17px; font-weight: 600; }
+  .plan-item p { margin: 0; color: var(--muted); font-size: 15px; }
+  .plan-item a { color: var(--burn); font-weight: 600; }
+  .pill { font-size: 13px; font-weight: 600; border-radius: 999px; padding: 4px 11px; border: 1px solid var(--line); color: var(--muted); white-space: nowrap; }
+  .pill.done { color: var(--burn); border-color: currentColor; }
+  .pill.reached { color: var(--buy); border-color: currentColor; }
+  .pill.next { color: var(--accent); border-color: currentColor; }
+  .plan-item.is-next .plan-mc { color: var(--accent); }
+  .plan-item.is-done .plan-mc { color: var(--burn); }
+  .plan-progress { grid-column: 2 / -1; display: grid; gap: 6px; margin-top: 6px; }
+  .plan-bar { height: 6px; border-radius: 3px; background: var(--line); overflow: hidden; }
+  .plan-bar i { display: block; height: 100%; background: var(--accent); transition: width .6s ease; }
+  .plan-progress small { color: var(--muted); font-size: 13px; }
+  .plan-regular { margin: 22px 0 0; color: var(--muted); font-size: 15px; max-width: 70ch; }
+  @media (max-width: 640px) {
+    .plan-item { grid-template-columns: 1fr auto; }
+    .plan-item .plan-body { grid-column: 1 / -1; grid-row: 2; }
+    .plan-item .pill { grid-column: 2; grid-row: 1; justify-self: end; }
+    .plan-progress { grid-column: 1 / -1; }
+  }
+  @media (prefers-reduced-motion: reduce) { .plan-bar i { transition: none; } }
+  .site-footer { border-top: 1px solid var(--line); }
+  .site-footer .in { max-width: 1280px; margin: 0 auto; padding: 36px 28px 48px; display: grid; gap: 16px; }
+  .socials { display: flex; gap: 16px; flex-wrap: wrap; }
+  .socials a { color: var(--ink); font-weight: 600; text-decoration: none; }
+  .socials a:hover { text-decoration: underline; }
+  .disclaimer { font-size: 13px; color: var(--muted); max-width: 80ch; margin: 0; }
+  .site-footer .brand { font-size: 18px; }
+  @media (max-width: 760px) { .site-footer .in { padding: 28px 16px 40px; } }
+
+  button.small { padding: 6px 11px; font-size: 13px; }
+  .trade-head { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 6px; }
+  .trade-head h2 { margin: 0; }
+  .wallet-info { font-size: 14px; color: var(--muted); margin: 0 0 12px; }
+  .wallet-info b { color: var(--ink); font-weight: 600; }
+  .ca { display: flex; align-items: center; gap: 8px; font-size: 13px; color: var(--muted); margin: 0 0 12px; }
+  .ca code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--ink); font-size: 13px; }
+  .qrow { display: grid; grid-template-columns: 74px 1fr; align-items: center; gap: 8px; margin-top: 8px; }
+  .qlabel { font-size: 13px; color: var(--muted); }
+  .qbtns { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
+  .qbtns button { padding: 10px 4px; font-size: 13px; white-space: nowrap; font-variant-numeric: tabular-nums; }
+  .qbtns button:disabled { opacity: .45; cursor: not-allowed; }
+  .settings { margin-top: 14px; padding: 14px; border: 1px solid var(--line); border-radius: 14px; background: var(--bg); }
+  .set-title { font-size: 13px; color: var(--muted); margin: 0 0 6px; }
+  .set-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 12px; }
+  .set-grid.two { grid-template-columns: 1fr 1fr; }
+  .set-grid label { font-size: 13px; color: var(--muted); font-weight: 400; display: grid; gap: 4px; margin: 0; }
+  .settings input { padding: 8px 10px; background: var(--panel); }
+  .pump { font-size: 14px; font-weight: 600; color: var(--accent); align-self: center; margin-left: auto; }
+  .fine { font-size: 12px; color: var(--muted); margin: 10px 0 0; line-height: 1.45; }
+  .status a { color: inherit; }
+  .status.ok { color: var(--buy); }
+  a.btn {
+    display: inline-block; text-decoration: none; font-weight: 600; font-size: 14px; border-radius: 12px; padding: 9px 15px;
+    border: 1px solid var(--accent); background: var(--accent); color: var(--accent-ink); margin-bottom: 14px;
+  }
+  a.btn.ghost-btn { background: transparent; color: var(--ink); border-color: var(--line); margin-bottom: 0; }
+  .launch-out { margin-top: 12px; }
+  .launch-out input { font-size: 13px; }
+  .controls h2 { margin-bottom: 10px; }
+  body.clean aside .controls { display: none; }
+  body.hide-dev aside .controls { display: none; }
+  @media (prefers-reduced-motion: reduce) { button { transition: none; } }
+</style>
+</head>
+<body>
+<header class="site-header">
+  <div class="in">
+    <a class="brand" href="#top" data-site="ticker">$BOULDER</a>
+    <nav class="nav" aria-label="Sections">
+      <a href="#play">Play</a>
+      <a href="#how">How it works</a>
+      <a href="#burn">The burn</a>
+      <a href="#plan">Burn plan</a>
+      <a href="#buy">How to buy</a>
+      <a href="#launch">Your coin</a>
+    </nav>
+    <a class="btn buy-link" href="#buy" target="_blank" rel="noopener">Buy</a>
+  </div>
+</header>
+
+<div class="hero" id="top">
+  <h1>Push the boulder.</h1>
+  <p><span data-site="name">Boulder</span> is a meme coin with a game strapped to it. Every buy pushes Sisyphus up the mountain, every sell lets the boulder slide back, and creator fees buy the coin back and burn it. He never reaches the top. That’s the point.</p>
+  <div class="cta">
+    <a class="btn buy-link" href="#buy" target="_blank" rel="noopener">Buy <span data-site="ticker">$BOULDER</span></a>
+    <span class="ca-chip" data-ca-wrap hidden>CA <code data-ca></code><button class="ghost small" data-copy-ca>Copy</button></span>
+    <span class="ca-chip" data-ca-soon>Contract address coming at launch</span>
+  </div>
+</div>
+
+<main id="play">
+  <section class="stage" aria-label="Boulder game">
+    <canvas id="game"></canvas>
+    <canvas id="fx"></canvas>
+    <div class="hud">
+      <div class="alt" id="alt">0</div>
+      <div class="sub" id="sub">Market cap. Next milestone $3K</div>
+    </div>
+    <div class="mode" id="mode"><i></i><span>Waiting</span></div>
+  </section>
+
+  <aside>
+    <section class="trade" id="trade">
+      <div class="trade-head">
+        <h2>Trade</h2>
+        <button class="ghost small" id="walletBtn">Connect wallet</button>
+      </div>
+      <p class="wallet-info" id="walletInfo">Connect a Solana wallet to buy and sell right here.</p>
+      <div class="ca" id="caRow" hidden>
+        <span>Contract</span><code id="caText"></code><button class="ghost small" id="copyCa">Copy</button>
+      </div>
+      <div class="qrow"><span class="qlabel">Quick buy</span><div class="qbtns" id="buyBtns"></div></div>
+      <div class="qrow"><span class="qlabel">Quick sell</span><div class="qbtns" id="sellBtns"></div></div>
+      <div class="settings" id="settings" hidden>
+        <p class="set-title">Quick buy amounts (SOL)</p>
+        <div class="set-grid"><input type="number" step="any" min="0" id="qb0"><input type="number" step="any" min="0" id="qb1"><input type="number" step="any" min="0" id="qb2"></div>
+        <p class="set-title">Quick sell amounts (% of your bag)</p>
+        <div class="set-grid"><input type="number" step="1" min="1" max="100" id="qs0"><input type="number" step="1" min="1" max="100" id="qs1"><input type="number" step="1" min="1" max="100" id="qs2"></div>
+        <div class="set-grid two">
+          <label>Slippage (%)<input type="number" step="any" min="0.5" max="50" id="qSlip"></label>
+          <label>Priority fee (SOL)<input type="number" step="any" min="0" max="0.1" id="qFee"></label>
+        </div>
+        <div class="row">
+          <button id="saveQuick">Save</button>
+          <button class="ghost" id="resetQuick">Back to defaults</button>
+          <button class="ghost" id="cancelQuick">Cancel</button>
+        </div>
+      </div>
+      <div class="row">
+        <button class="ghost small" id="editQuick">Edit quick trade</button>
+        <a class="pump" id="pumpLink" target="_blank" rel="noopener" hidden>View on pump.fun</a>
+      </div>
+      <p class="status" id="tradeStatus"></p>
+      <p class="fine">Trades are built by PumpPortal (0.5% fee) and signed in your own wallet; this page never sees your keys. Meme coins are extremely risky. Only trade what you can afford to lose.</p>
+    </section>
+
+    <section class="stats">
+      <div>Market cap<b id="sMc">—</b></div>
+      <div>Peak market cap<b id="sAth">—</b></div>
+      <div>Volume<b id="sVol">0 SOL</b></div>
+      <div class="b">Buys<b id="sBuys">0</b></div>
+      <div class="s">Sells<b id="sSells">0</b></div>
+      <div>Supply<b id="sSupply">1B</b></div>
+      <div class="f"><span id="sBurnedLabel">Burned</span><b id="sBurned">0</b></div>
+    </section>
+
+    <section class="feed">
+      <h2>Activity</h2>
+      <ol id="feed"><li class="empty">Buys, sells and burns show up here as they happen.</li></ol>
+    </section>
+
+    <section class="controls">
+      <h2>Test controls</h2>
+      <label for="mint">Coin contract address</label>
+      <input id="mint" placeholder="Paste the pump.fun contract address" autocomplete="off" spellcheck="false">
+      <div class="row">
+        <button id="live">Go live</button>
+        <button id="demo" class="ghost">Run demo</button>
+      </div>
+      <div class="row">
+        <button class="buy" data-test="buy">Test buy</button>
+        <button class="sell" data-test="sell">Test sell</button>
+        <button class="burn" id="testBurn">Test burn</button>
+        <button class="ghost" id="reset">Reset</button>
+      </div>
+      <div class="row">
+        <button class="buy" data-test="buy" data-sol="1">Test 1 SOL buy</button>
+        <button class="buy" data-test="buy" data-sol="5">Test 5 SOL buy</button>
+        <button class="buy" data-test="buy" data-sol="10">Test 10 SOL whale buy</button>
+      </div>
+      <p class="status" id="status">Paste a contract address and go live, or run the demo to see it move.</p>
+    </section>
+  </aside>
+</main>
+
+<section class="page" id="how">
+  <h2 class="big">How the climb works</h2>
+  <p class="sub">The game runs on the coin’s live trades. Nothing is scripted; the mountain only moves when the market does.</p>
+  <div class="cols">
+    <div><h3><span class="tag" style="background: var(--buy)"></span>Buys push</h3><p>Every buy pushes the boulder uphill. His height is the coin’s live market cap, so the bigger the pump, the further he climbs.</p></div>
+    <div><h3><span class="tag" style="background: var(--sell)"></span>Sells slide</h3><p>Every sell lets the boulder grind back down while he digs in his heels. Paper hands have consequences.</p></div>
+    <div><h3><span class="tag" style="background: var(--burn)"></span>Burns burn</h3><p>When supply gets burned, his feet catch fire and the whole mountain shrinks to match the smaller supply.</p></div>
+    <div><h3><span class="tag" style="background: var(--accent)"></span>Big buys hit different</h3><p>A 1 SOL buy triggers a mighty heave. A 5 SOL buy gives him super strength for a few seconds, and he pushes like it weighs nothing.</p></div>
+  </div>
+</section>
+
+<section class="page" id="burn">
+  <div class="burn-wrap">
+    <div>
+      <h2 class="big">The burn</h2>
+      <p>Every trade pays creator fees. We regularly claim them, buy the coin back off the market and burn it, taking it out of circulation for good. Supply only goes one way.</p>
+      <p>You can watch it happen live: each burn sets his feet on fire and shrinks the mountain.</p>
+      <p data-burn-wallet hidden>Every claim, buyback and burn happens in one public wallet, so you can check it yourself: <a id="burnWalletLink" target="_blank" rel="noopener"></a></p>
+    </div>
+    <div class="burn-nums">
+      <div>Supply<b id="burnSupply">1B</b></div>
+      <div class="f">Burned<b id="burnBurned">0</b></div>
+      <div>Market cap<b id="burnMc">—</b></div>
+      <div>Peak market cap<b id="burnAth">—</b></div>
+    </div>
+  </div>
+</section>
+
+<section class="page" id="plan">
+  <h2 class="big">Burn plan</h2>
+  <p class="sub">Creator fees are claimed, used to buy the coin back and burned by hand at each of these market caps. Each burn gets marked here with its transaction once it’s done.</p>
+  <ol class="plan-list" id="planList"></ol>
+  <p class="plan-regular" id="planRegular"></p>
+</section>
+
+<section class="page" id="buy">
+  <h2 class="big">How to buy</h2>
+  <p class="sub">It takes a couple of minutes the first time.</p>
+  <ol class="steps">
+    <li><h3>Get a Solana wallet</h3><p>Install Phantom, Solflare or Backpack on your phone or browser and write down your recovery phrase somewhere safe.</p></li>
+    <li><h3>Add SOL</h3><p>Buy SOL in your wallet app or on an exchange, then send it to your wallet address.</p></li>
+    <li><h3>Connect and push</h3><p>Connect your wallet in the Trade panel above and tap a quick buy, or buy on pump.fun. Then watch him climb.</p></li>
+  </ol>
+</section>
+
+<section class="page launch-page" id="launch">
+      <h2 class="big">Put the boulder on your coin</h2>
+      <p class="lede">Launch a coin on pump.fun, then paste its contract address to get your own boulder page, with live trades, burns and trading built in.</p>
+      <a class="btn" href="https://pump.fun/create" target="_blank" rel="noopener">Launch a coin on pump.fun</a>
+      <label for="launchMint">Your coin’s contract address</label>
+      <input id="launchMint" placeholder="Paste your contract address" autocomplete="off" spellcheck="false">
+      <div class="row"><button id="makeLink">Get my boulder page</button></div>
+      <div class="launch-out" id="launchOut" hidden>
+        <input id="launchUrl" readonly>
+        <div class="row"><button id="copyLaunch">Copy link</button><a class="btn ghost-btn" id="openLaunch" target="_blank" rel="noopener">Open it</a></div>
+      </div>
+      <p class="status" id="launchStatus"></p>
+</section>
+
+<footer class="site-footer">
+  <div class="in">
+    <a class="brand" href="#top" data-site="ticker">$BOULDER</a>
+    <div class="socials" id="socials"></div>
+    <span class="ca-chip" data-ca-wrap hidden>CA <code data-ca></code><button class="ghost small" data-copy-ca>Copy</button></span>
+    <p class="disclaimer"><span data-site="ticker">$BOULDER</span> is a meme coin with no intrinsic value and no expectation of financial return. Nothing on this site is financial advice. Crypto is volatile and you can lose everything you put in, so only use what you can afford to lose.</p>
+  </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/@solana/web3.js@1.95.3/lib/index.iife.min.js"></script>
+<script>
+(() => {
+  const $ = s => document.querySelector(s);
+  const canvas = $('#game'), ctx = canvas.getContext('2d', { willReadFrequently: true });
+  const fxCanvas = $('#fx'), fx = fxCanvas.getContext('2d');
+  let lowW = 0, lowH = 0, pxs = 0;
+  const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const params = new URLSearchParams(location.search);
+  const inPreview = /claude/i.test(location.hostname);
+  const DISPLAY = '"Press Start 2P", ui-monospace, monospace';
+
+  // ▼ Paste your coin's contract address here once it's launched. Leave empty until then.
+  const COIN_MINT = '';
+
+  // ---------- Milestones: market caps along the trail, evenly spaced, summit last ----------
+  const MILESTONES = [3e3, 1e4, 2.5e4, 5e4, 1e5, 2.5e5, 5e5, 1e6, 5e6, 1e7, 2e7, 5e7, 1e8, 5e8, 1e9, 5e9, 1e10, 5e10, 1e11];
+  const SUMMIT = 1e12;                       // the summit he never reaches
+  const LADDER = [...MILESTONES, SUMMIT];
+  const SEGS = LADDER.length - 1;
+  // Trail length of each gap between milestones, in "regular" units. $3K to $10K is regular length,
+  // then each gap is double the one before it ($10K to $25K is 2x), up to GAP_CAP times regular.
+  const GAP_CAP = 64;
+  const GAPS = Array.from({ length: SEGS }, (_, i) => Math.min(GAP_CAP, 2 ** i));
+  const GAP_START = GAPS.reduce((a, g, i) => (a.push(i ? a[i - 1] + GAPS[i - 1] : 0), a), []);
+  const GAP_SUM = GAPS.reduce((a, g) => a + g, 0);
+  const GAP_SCALE = GAP_SUM / SEGS;           // keeps scenery detail the same size along a much longer trail
+  const milestoneFrac = i => GAP_START[i] / GAP_SUM;
+  // Fraction of the trail for a market cap (log scale between neighbouring milestones)
+  function fracFor(mc) {
+    if (!(mc > LADDER[0])) return 0;
+    let i = 0; while (i < SEGS - 1 && mc >= LADDER[i + 1]) i++;
+    const f = (GAP_START[i] + GAPS[i] * Math.log(mc / LADDER[i]) / Math.log(LADDER[i + 1] / LADDER[i])) / GAP_SUM;
+    // Soft ceiling: he can creep toward the summit but never touch it
+    return f < 0.97 ? f : 0.97 + 0.025 * (1 - Math.exp(-(f - 0.97) / 0.025));
+  }
+  const nextMilestone = mc => MILESTONES.find(m => m > mc) || SUMMIT;
+
+  // ---------- Supply (burns shrink the mountain) ----------
+  const INITIAL_SUPPLY = 1_000_000_000;
+  const RPC = params.get('rpc') || 'https://api.mainnet-beta.solana.com';
+  const SUPPLY_POLL_MS = 20000, PRICE_POLL_MS = 60000;
+  let supply = INITIAL_SUPPLY, shownSupply = INITIAL_SUPPLY;
+
+  // ---------- State ----------
+  let mc = 0, ath = 0, lastMcSol = 0, solUsd = 0;
+  let shownF = 0, buys = 0, sells = 0, volume = 0;
+  let moving = 0, footS = 0;
+  let floaters = [], dust = [], embers = [], flames = [];
+  let fireLevel = 0, fireHold = 0; // feet catch fire while a burn plays out
+  // Big buys: 1+ SOL triggers a mighty heave, 5+ SOL gives him super strength for a while
+  const MIGHTY_SOL = 1, SUPER_SOL = 5;
+  // Flight: a whale buy or a fast market cap surge sends him flying with the boulder to the next cap
+  const WHALE_SOL = 10;            // any single buy of this many SOL or more is a whale buy
+  const SOAR_PCT = 0.5;            // market cap up 50%...
+  const SOAR_WINDOW_S = 60;        // ...within 60 seconds, and past a milestone, also triggers a flight
+  const flight = { active: false, t: 0, dur: 2, from: 0, to: 0, hold: 0, lift: 0 };
+  let mcHistory = [], trail = [], soarBlocked = false;
+  const power = { heaveT: -1, heaveFired: false, superT: 0, superLevel: 0, shake: 0 };
+  let rings = [], sparks = [];
+  let mint = '';
+  const cam = { x: 0, y: 0, ready: false };
+
+  // ---------- Formatting ----------
+  const trim = s => s.replace(/\.0+$|(\.\d*?)0+$/, '$1');
+  function compact(n) {
+    n = Math.max(0, n);
+    if (n >= 1e12) return trim((n / 1e12).toFixed(2)) + 'T';
+    if (n >= 1e9) return trim((n / 1e9).toFixed(2)) + 'B';
+    if (n >= 1e6) return trim((n / 1e6).toFixed(n >= 1e8 ? 0 : 1)) + 'M';
+    if (n >= 1e3) return trim((n / 1e3).toFixed(n >= 1e5 ? 0 : 1)) + 'K';
+    return Math.round(n).toString();
+  }
+  const usd = n => '$' + compact(n);
+  const fmtSol = n => n >= 10 ? n.toFixed(1) : n >= 1 ? n.toFixed(2) : n.toFixed(3);
+  const shortAddr = a => a ? a.slice(0, 4) + '…' + a.slice(-4) : 'unknown';
+
+  // ---------- Color ----------
+  const rgb = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
+  const lerp3 = (a, b, t) => a.map((v, i) => v + (b[i] - v) * t);
+  const css = (c, a = 1) => `rgba(${c.map(Math.round).join(',')},${a})`;
+  const mixc = (a, b, t) => lerp3(rgb(a), rgb(b), t);
+
+  // ---------- Geometry (world space; the camera follows the boulder) ----------
+  let W = 0, H = 0, base, fullPeak, peak, LUT = [], L = 1, R = 20, U = 18, geomH = -1, SEG = 160;
+  let stars = [], ranges = [], clouds = [], ledges = [], faceRocks = [], rockTex = null, outcrops = [], pebbles = [], tufts = [], speckles = [], grain = null;
+  const SLOPE_R = 0.85; // steepness of the far face
+
+  function resize() {
+    const r = canvas.getBoundingClientRect();
+    if (!r.width || !r.height) return;
+    const dpr = Math.min(2, window.devicePixelRatio || 1);
+    W = r.width; H = r.height;
+    // Draw at a fraction of the screen size, then scale up with hard pixel edges
+    const PXS = Math.max(3, Math.min(4, Math.round(Math.min(W, H) / 150)));
+    pxs = PXS;
+    lowW = Math.max(1, Math.round(W / PXS)); lowH = Math.max(1, Math.round(H / PXS));
+    canvas.width = lowW; canvas.height = lowH;
+    ctx.setTransform(lowW / W, 0, 0, lowH / H, 0, 0);
+    fxCanvas.width = Math.round(W * dpr); fxCanvas.height = Math.round(H * dpr);
+    fx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    R = Math.max(28, Math.min(W, H) * (W < 600 ? 0.12 : 0.11));
+    U = R * 0.72;
+    SEG = Math.max(320, Math.min(560, Math.min(W, H) * 0.95)); // trail length between milestones
+    const total = SEG * GAP_SUM, ang = 0.8;                         // ~46° average climb, steep like a cliff face
+    base = { x: W * 0.12, y: H * 0.86 };
+    fullPeak = { x: base.x + total * Math.cos(ang) * 0.93, y: base.y - total * Math.sin(ang) * 0.93 };
+    geomH = -1; setGeometry(); buildScenery();
+    cam.ready = false;
+  }
+  new ResizeObserver(resize).observe(canvas);
+
+  const visualScale = () => Math.min(1, Math.max(0.15, shownSupply / INITIAL_SUPPLY));
+  function setGeometry() {
+    const h = visualScale();
+    if (Math.abs(h - geomH) < 1e-5) return;
+    geomH = h;
+    peak = { x: base.x + (fullPeak.x - base.x) * h, y: base.y + (fullPeak.y - base.y) * h };
+    LUT = [{ t: 0, s: 0 }];
+    let prev = pathPoint(0), s = 0;
+    for (let i = 1; i <= 6000; i++) {
+      const t = i / 6000, p = pathPoint(t);
+      s += Math.hypot(p.x - prev.x, p.y - prev.y);
+      LUT.push({ t, s }); prev = p;
+    }
+    L = s;
+  }
+  function pathOn(t, pk) {
+    // a gentle wander so the climb isn't a ruler-straight line, steeper toward the top
+    const e = 0.8 * t + 0.2 * t * t;
+    const wob = Math.sin(t * Math.PI * 7 * GAP_SCALE) * 0.012 / GAP_SCALE * (1 - t * 0.5);
+    return { x: base.x + (pk.x - base.x) * t, y: base.y + (pk.y - base.y) * (e + wob * Math.sin(Math.PI * t)) };
+  }
+  const pathPoint = t => pathOn(t, peak);
+  function tAtS(s) {
+    if (LUT.length < 2) return 0;
+    let lo = 0, hi = LUT.length - 1;
+    while (hi - lo > 1) { const m = (lo + hi) >> 1; if (LUT[m].s < s) lo = m; else hi = m; }
+    const a = LUT[lo], b = LUT[hi];
+    return a.t + (b.t - a.t) * ((s - a.s) / ((b.s - a.s) || 1));
+  }
+  function frameAt(s) {
+    const cs = Math.max(0, Math.min(L, s));
+    const t = tAtS(cs), p = pathPoint(t);
+    const dt_ = 0.0008 / GAP_SCALE;
+    const p2 = pathPoint(Math.min(1, t + dt_)), p1 = pathPoint(Math.max(0, t - dt_));
+    let tx = p2.x - p1.x, ty = p2.y - p1.y; const m = Math.hypot(tx, ty) || 1; tx /= m; ty /= m;
+    const extra = s - cs;
+    return { x: p.x + tx * extra, y: p.y + ty * extra, tx, ty, nx: ty, ny: -tx };
+  }
+
+  function seeded(seed) { return () => (seed = (seed * 16807) % 2147483647) / 2147483647; }
+  function ridgeLine(r, y0, rough, depth = 7) {
+    let pts = [{ x: -20, y: y0 + (r() - 0.5) * rough }, { x: W + 20, y: y0 + (r() - 0.5) * rough }];
+    let d = rough;
+    for (let k = 0; k < depth; k++) {
+      const np = [];
+      for (let i = 0; i < pts.length - 1; i++) {
+        const a = pts[i], b = pts[i + 1];
+        np.push(a, { x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 + (r() - 0.5) * d });
+      }
+      np.push(pts[pts.length - 1]); pts = np; d *= 0.52;
+    }
+    return pts;
+  }
+  function buildScenery() {
+    const r = seeded(11);
+    stars = Array.from({ length: 140 }, () => ({ x: r() * W, y: r() * H, s: r() * 1.3 + 0.3, tw: r() * 6 }));
+    ranges = [0.40, 0.50, 0.60, 0.70].map((y, k) => ridgeLine(r, H * y, H * (0.34 - k * 0.05)));
+    clouds = Array.from({ length: 7 }, () => {
+      const w = W * (0.14 + r() * 0.16), cw = Math.ceil(w * 2.4), ch = Math.ceil(w * 0.9);
+      const cv = document.createElement('canvas'); cv.width = cw; cv.height = ch;
+      const cx = cv.getContext('2d');
+      for (let i = 0; i < 7; i++) {
+        const x = cw / 2 + (r() - 0.5) * w * 1.2, y = ch * 0.55 + (r() - 0.5) * ch * 0.25, rr = w * (0.25 + r() * 0.3);
+        const gr = cx.createRadialGradient(x, y, 0, x, y, rr);
+        gr.addColorStop(0, 'rgba(255,255,255,0.55)'); gr.addColorStop(1, 'rgba(255,255,255,0)');
+        cx.fillStyle = gr; cx.beginPath(); cx.ellipse(x, y, rr, rr * 0.45, 0, 0, Math.PI * 2); cx.fill();
+      }
+      return { x: r() * W, y: H * (r() * 1.6 - 0.5), w: cw, v: 4 + r() * 8, img: cv };
+    });
+    // Rock grain texture (specks, blotches and hairline cracks) tiled across the mountain
+    const tex = document.createElement('canvas'); tex.width = tex.height = 256;
+    const tx = tex.getContext('2d');
+    for (let i = 0; i < 90; i++) {
+      const x = r() * 256, y = r() * 256, rr = 6 + r() * 26;
+      const gr = tx.createRadialGradient(x, y, 0, x, y, rr);
+      const light = r() < 0.45;
+      gr.addColorStop(0, light ? 'rgba(255,240,230,0.10)' : 'rgba(10,6,30,0.16)'); gr.addColorStop(1, 'rgba(0,0,0,0)');
+      tx.fillStyle = gr; tx.fillRect(x - rr, y - rr, rr * 2, rr * 2);
+    }
+    for (let i = 0; i < 900; i++) {
+      tx.fillStyle = r() < 0.5 ? `rgba(255,240,230,${0.08 + r() * 0.12})` : `rgba(10,6,30,${0.1 + r() * 0.18})`;
+      const s = 0.6 + r() * 1.8; tx.fillRect(r() * 256, r() * 256, s, s);
+    }
+    tx.lineCap = 'round';
+    for (let i = 0; i < 22; i++) {
+      let x = r() * 256, y = r() * 256, a = r() * Math.PI;
+      tx.strokeStyle = `rgba(10,6,30,${0.18 + r() * 0.2})`; tx.lineWidth = 0.6 + r() * 0.8;
+      tx.beginPath(); tx.moveTo(x, y);
+      for (let k = 0; k < 4; k++) { a += (r() - 0.5) * 1.2; x += Math.cos(a) * (6 + r() * 12); y += Math.sin(a) * (6 + r() * 12); tx.lineTo(x, y); }
+      tx.stroke();
+    }
+    rockTex = ctx.createPattern(tex, 'repeat');
+
+    // Cliff ledges running across the face, and boulders bedded into it
+    ledges = Array.from({ length: Math.round(260 * GAP_SCALE) }, () => ({ t: r(), depth: H * (0.08 + r() * 0.9), len: 30 + r() * 110, bow: (r() - 0.5) * 10 }));
+    faceRocks = Array.from({ length: Math.round(220 * GAP_SCALE) }, () => ({ t: r(), depth: H * (0.06 + r() * 0.85), s: 5 + r() * 16, pts: rockPts(r), rot: (r() - 0.5) * 0.6 }));
+    // Rocks sitting on the edge of the trail, and pebbles lying on it
+    outcrops = Array.from({ length: Math.round(150 * GAP_SCALE) }, () => ({ t: 0.02 + r() * 0.95, s: 7 + r() * 14, pts: rockPts(r), n: 1 + Math.floor(r() * 3) }));
+    pebbles = Array.from({ length: Math.round(520 * GAP_SCALE) }, () => ({ t: 0.004 + r() * 0.99, s: 1.6 + r() * 3.6, pts: rockPts(r), down: r() < 0.35 ? 2 + r() * 10 : 0 }));
+    tufts = Array.from({ length: 24 }, () => ({ x: base.x - W * 0.3 + r() * W * 0.35, h: 6 + r() * 10, lean: (r() - 0.5) * 0.6 }));
+    speckles = Array.from({ length: 9 }, () => ({ a: r() * Math.PI * 2, d: r() * 0.75, rad: 0.06 + r() * 0.12, moss: r() < 0.3 }));
+    const g = document.createElement('canvas'); g.width = g.height = 128;
+    const gx = g.getContext('2d'), img = gx.createImageData(128, 128);
+    for (let i = 0; i < img.data.length; i += 4) { const v = r() * 255; img.data[i] = img.data[i + 1] = img.data[i + 2] = v; img.data[i + 3] = 9; }
+    gx.putImageData(img, 0, 0); grain = ctx.createPattern(g, 'repeat');
+  }
+
+  const boulderS = () => shownF * L;
+  function boulderCenter() { const f = frameAt(boulderS()); return { x: f.x + f.nx * R, y: f.y + f.ny * R - flight.lift }; }
+
+  // ---------- Market cap ----------
+  function setMarketCap(v, silent) {
+    if (!(v > 0)) return;
+    const prev = mc;
+    mc = v; if (mc > ath) ath = mc;
+    if (silent) { shownF = fracFor(mc); mcHistory = []; }
+    else {
+      const now = performance.now() / 1000;
+      mcHistory.push([now, mc]); mcHistory = mcHistory.filter(h => now - h[0] <= SOAR_WINDOW_S);
+      const low = Math.min(...mcHistory.map(h => h[1]), prev || mc);
+      if (!soarBlocked && low > 0 && mc >= low * (1 + SOAR_PCT) && nextMilestone(low) <= mc) startFlight('soar', low);
+    }
+    updateStats();
+  }
+
+  // ---------- Trades ----------
+  function handleTrade(type, sol, wallet, sig, newMc) {
+    sol = Number(sol) || 0;
+    if (type === 'buy') buys++; else sells++;
+    volume += sol;
+    const before = mc;
+    const whale = type === 'buy' && sol >= WHALE_SOL;
+    soarBlocked = whale;
+    if (newMc > 0) setMarketCap(newMc);
+    soarBlocked = false;
+    if (whale) startFlight('whale', before);
+    if (type === 'buy' && sol >= SUPER_SOL) startSuper(sol);
+    else if (type === 'buy' && sol >= MIGHTY_SOL) startHeave(false);
+    if (L > 1) {
+      const b = boulderCenter();
+      floaters.push({
+        x: b.x + (Math.random() - 0.5) * R, y: b.y - R * 1.6, life: 1,
+        text: (type === 'buy' ? '+' : '−') + fmtSol(sol) + ' SOL', color: type === 'buy' ? '#7cf2bd' : '#ff8f8f'
+      });
+    }
+    addFeed(type, type === 'buy' ? 'Buy' : 'Sell', fmtSol(sol) + ' SOL', shortAddr(wallet), sig);
+    updateStats(); save();
+  }
+
+  // ---------- Big-buy powers ----------
+  function startHeave(isSuper) {
+    power.heaveT = 0; power.heaveFired = false;
+    if (L > 1 && !isSuper) {
+      const b = boulderCenter();
+      floaters.push({ x: b.x, y: b.y - R * 2.4, life: 1.4, text: 'Mighty heave!', color: '#ffd27a', size: 20 });
+    }
+  }
+  function startSuper(sol) {
+    power.superT = Math.min(15, 6 + (sol - SUPER_SOL)); // 6s, plus 1s per extra SOL, up to 15s
+    if (!flight.active) startHeave(true);
+    if (L > 1 && !flight.active) {
+      const b = boulderCenter();
+      floaters.push({ x: b.x, y: b.y - R * 2.6, life: 1.8, text: 'Super strength!', color: '#fff0b0', size: 26 });
+    }
+  }
+  function heaveBurst() {
+    const b = boulderCenter(), f = frameAt(boulderS());
+    const big = power.superLevel > 0.2 || power.superT > 0;
+    rings.push({ x: b.x - f.tx * R, y: b.y - f.ty * R, r: R * 0.6, life: 1, big });
+    if (big) rings.push({ x: b.x, y: b.y, r: R, life: 1.2, big });
+    power.shake = U * (big ? 0.6 : 0.35);
+    pose.pulse = 1.8;
+    if (pose.feetWorld && !reduceMotion) pose.feetWorld.forEach(ft => {
+      for (let i = 0; i < 10; i++) dust.push({ x: ft.x, y: ft.y, vx: -Math.random() * 3, vy: -Math.random() * 2, life: 1, r: 2 + Math.random() * 3 });
+    });
+  }
+
+  // ---------- Flight ----------
+  function startFlight(kind, fromMc) {
+    if (flight.active || L <= 1) return;
+    const capAhead = nextMilestone(fromMc || mc);
+    const destMc = kind === 'whale' ? Math.max(mc, capAhead) : mc;
+    const to = Math.max(fracFor(destMc), shownF);
+    if (to - shownF < 0.004) return;
+    Object.assign(flight, { active: true, t: 0, from: shownF, to, hold: 0, dur: Math.max(1.8, Math.min(5, 1.6 + Math.log2(1 + (to - shownF) * L / SEG) * 0.9)) });
+    power.heaveT = -1;
+    const b = boulderCenter();
+    floaters.push({ x: W * 0.5, y: H * 0.26, screen: true, life: 2.4, text: (kind === 'whale' ? 'Whale! ' : 'Soaring! ') + 'Flying to ' + usd(destMc), color: '#fee761', size: 26 });
+    rings.push({ x: b.x, y: b.y + R, r: R * 0.8, life: 1.2, big: true });
+    power.shake = U * 0.6;
+  }
+
+  // ---------- Burns ----------
+  function setSupply(n, silent) {
+    if (!(n > 0)) return;
+    const burned = supply - n;
+    supply = n;
+    if (silent) { shownSupply = n; geomH = -1; if (W) setGeometry(); }
+    else if (burned >= 1) burnEvent(burned);
+    updateStats();
+  }
+  function burnEvent(amount) {
+    fireHold = 2.5; // minimum burn time; it keeps going while the mountain is still shrinking
+    addFeed('burn', 'Burn', compact(amount) + ' tokens', 'supply now ' + compact(supply));
+    if (!W) return;
+    const x = cam.x + W * 0.5, y = cam.y + H * 0.3;
+    floaters.push({ x, y, life: 1.6, text: '🔥 ' + compact(amount) + ' burned', color: '#ffc27a' });
+    const n = reduceMotion ? 12 : 60;
+    for (let i = 0; i < n; i++) embers.push({ x: x + (Math.random() - 0.5) * 80, y: y + 20 + Math.random() * 12,
+      vx: (Math.random() - 0.5) * 1.2, vy: -1 - Math.random() * 2.5, life: 1, r: 1.5 + Math.random() * 2.5 });
+  }
+
+  const feedEl = $('#feed');
+  function addFeed(cls, kind, amtText, whoText, sig) {
+    const empty = feedEl.querySelector('.empty'); if (empty) empty.remove();
+    const li = document.createElement('li'); li.className = cls;
+    const k = document.createElement('span'); k.className = 'k'; k.textContent = kind;
+    const amt = document.createElement('span'); amt.textContent = amtText;
+    const who = document.createElement('span'); who.className = 'who';
+    if (sig) {
+      const a = document.createElement('a'); a.href = 'https://solscan.io/tx/' + sig; a.target = '_blank'; a.rel = 'noopener';
+      a.textContent = whoText; who.append(a);
+    } else who.textContent = whoText;
+    li.append(k, amt, who);
+    feedEl.prepend(li);
+    while (feedEl.children.length > 40) feedEl.lastChild.remove();
+  }
+  function updateStats() {
+    const burned = Math.max(0, INITIAL_SUPPLY - supply);
+    $('#sBuys').textContent = buys.toLocaleString();
+    $('#sSells').textContent = sells.toLocaleString();
+    $('#sVol').textContent = fmtSol(volume) + ' SOL';
+    $('#sMc').textContent = mc ? usd(mc) : '—';
+    $('#sAth').textContent = ath ? usd(ath) : '—';
+    $('#sSupply').textContent = compact(supply);
+    try { renderPlan(); } catch (e) {}
+    const bS = $('#burnSupply'); if (bS) {
+      bS.textContent = compact(supply); $('#burnBurned').textContent = compact(burned);
+      $('#burnMc').textContent = mc ? usd(mc) : '—'; $('#burnAth').textContent = ath ? usd(ath) : '—';
+    }
+    $('#sBurned').textContent = compact(burned);
+    $('#sBurnedLabel').textContent = burned > 0 ? 'Burned (' + trim((burned / INITIAL_SUPPLY * 100).toFixed(2)) + '%)' : 'Burned';
+  }
+
+  // ---------- Save per coin (on this device) ----------
+  function save() {
+    if (!mint) return;
+    try { localStorage.setItem('boulder:' + mint, JSON.stringify({ mc, ath, buys, sells, volume, solUsd })); } catch (e) {}
+  }
+  function load() {
+    try {
+      const d = JSON.parse(localStorage.getItem('boulder:' + mint) || 'null');
+      if (d) {
+        buys = d.buys || 0; sells = d.sells || 0; volume = d.volume || 0; ath = d.ath || 0;
+        if (d.solUsd) solUsd = d.solUsd;
+        if (d.mc) setMarketCap(d.mc, true);
+      }
+    } catch (e) {}
+    updateStats();
+  }
+
+  // ---------- Live: trades from PumpPortal, supply from Solana RPC, SOL price for USD ----------
+  let ws = null, retry = 1000, retryTimer = null, supplyTimer = null, priceTimer = null, demoTimer = null, demoBurnTimer = null;
+  const statusEl = $('#status'), modeEl = $('#mode');
+  function setMode(kind, text) { modeEl.className = 'mode ' + kind; modeEl.querySelector('span').textContent = text; }
+  function setStatus(text, err) { statusEl.textContent = text; statusEl.classList.toggle('err', !!err); }
+
+  function goLive(address) {
+    address = (address || '').trim();
+    if (!/^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(address)) {
+      setStatus('That doesn’t look like a Solana contract address. Copy it from the coin’s pump.fun page.', true);
+      return;
+    }
+    if (inPreview) {
+      setStatus('Live trades can’t connect from this preview. They work once the page is on your own site. Use the demo or test buttons here.', true);
+      return;
+    }
+    stopDemo(); stopLive();
+    mint = address;
+    onMintChange();
+    mc = 0; ath = 0; buys = sells = volume = 0; shownF = 0;
+    load();
+    try { localStorage.setItem('boulder:lastMint', mint); } catch (e) {}
+    pollPrice();
+    connect();
+    pollSupply(true);
+  }
+  async function pollPrice() {
+    const forMint = mint;
+    let p = 0;
+    try {
+      const r = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=solana&vs_currencies=usd');
+      const j = await r.json(); p = Number(j && j.solana && j.solana.usd) || 0;
+    } catch (e) {}
+    if (!p) {
+      try {
+        const r = await fetch('https://lite-api.jup.ag/price/v3?ids=So11111111111111111111111111111111111111112');
+        const j = await r.json(), v = j && (j.So11111111111111111111111111111111111111112 || (j.data && j.data.So11111111111111111111111111111111111111112));
+        p = Number(v && (v.usdPrice || v.price)) || 0;
+      } catch (e) {}
+    }
+    if (p > 0 && forMint === mint) {
+      solUsd = p;
+      if (lastMcSol) setMarketCap(lastMcSol * solUsd);
+    }
+    if (forMint === mint) priceTimer = setTimeout(pollPrice, PRICE_POLL_MS);
+  }
+  function connect() {
+    setMode('', 'Connecting');
+    setStatus('Connecting to live trades…');
+    try { ws = new WebSocket('wss://pumpportal.fun/api/data'); }
+    catch (e) { return scheduleRetry(); }
+    ws.onopen = () => {
+      retry = 1000;
+      ws.send(JSON.stringify({ method: 'subscribeTokenTrade', keys: [mint] }));
+      setMode('live', 'Live');
+      setStatus('Live. Watching ' + shortAddr(mint) + ' for buys, sells and burns.');
+    };
+    ws.onmessage = e => {
+      let d; try { d = JSON.parse(e.data); } catch (_) { return; }
+      if (d && d.mint === mint && (d.txType === 'buy' || d.txType === 'sell')) {
+        if (d.marketCapSol) lastMcSol = Number(d.marketCapSol);
+        handleTrade(d.txType, d.solAmount, d.traderPublicKey, d.signature, solUsd ? lastMcSol * solUsd : 0);
+        if (!solUsd) setStatus('Live, but the SOL price hasn’t loaded yet, so market cap is on hold. It retries every minute.', true);
+      }
+    };
+    ws.onclose = () => { if (ws) scheduleRetry(); };
+    ws.onerror = () => { try { ws.close(); } catch (_) {} };
+  }
+  function scheduleRetry() {
+    setMode('', 'Reconnecting');
+    setStatus('Lost the live connection. Retrying in ' + Math.round(retry / 1000) + 's.', true);
+    clearTimeout(retryTimer);
+    retryTimer = setTimeout(connect, retry);
+    retry = Math.min(retry * 2, 30000);
+  }
+  async function pollSupply(first) {
+    const forMint = mint;
+    try {
+      const r = await fetch(RPC, {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ jsonrpc: '2.0', id: 1, method: 'getTokenSupply', params: [forMint] })
+      });
+      const j = await r.json();
+      const v = j && j.result && j.result.value;
+      if (v && forMint === mint) setSupply(Number(v.amount) / 10 ** v.decimals, first);
+    } catch (e) {}
+    if (forMint === mint) supplyTimer = setTimeout(() => pollSupply(false), SUPPLY_POLL_MS);
+  }
+  function stopLive() {
+    clearTimeout(retryTimer); clearTimeout(supplyTimer); clearTimeout(priceTimer);
+    if (ws) { const w = ws; ws = null; try { w.close(); } catch (_) {} }
+  }
+
+  // ---------- Demo: made-up trades that move a made-up market cap ----------
+  const demoImpact = sol => sol >= 10 ? 1 + Math.min(4, sol * 0.15) : 1 + Math.min(0.6, sol * 0.22);
+  function startDemo() {
+    stopLive(); stopDemo();
+    mint = ''; onMintChange(); setMode('demo', 'Demo');
+    setStatus('Demo running with made-up trades and burns. Go live to use real ones.');
+    if (!mc) setMarketCap(3500, true);
+    const tick = () => {
+      const roll = Math.random();
+      const sol = roll < 0.004 ? WHALE_SOL + Math.random() * 8 : roll < 0.015 ? 5 + Math.random() * 3 : roll < 0.05 ? 1 + Math.random() * 2 : Math.exp((Math.random() - 0.6) * 2.6) * 0.4;
+      const fake = Array.from({ length: 44 }, () => '123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz'[Math.floor(Math.random() * 58)]).join('');
+      const buy = sol >= MIGHTY_SOL || Math.random() < 0.62;
+      handleTrade(buy ? 'buy' : 'sell', sol, fake, null, buy ? mc * demoImpact(sol) : Math.max(2500, mc / demoImpact(sol)));
+      demoTimer = setTimeout(tick, 400 + Math.random() * 2200);
+    };
+    const burnTick = () => {
+      setSupply(supply * (1 - (0.005 + Math.random() * 0.025)));
+      demoBurnTimer = setTimeout(burnTick, 15000 + Math.random() * 15000);
+    };
+    tick();
+    demoBurnTimer = setTimeout(burnTick, 8000);
+  }
+  function stopDemo() { clearTimeout(demoTimer); clearTimeout(demoBurnTimer); }
+
+  // ---------- Controls ----------
+  $('#live').onclick = () => goLive($('#mint').value);
+  $('#mint').addEventListener('keydown', e => { if (e.key === 'Enter') goLive(e.target.value); });
+  $('#demo').onclick = startDemo;
+  document.querySelectorAll('[data-test]').forEach(b => b.onclick = () => {
+    const buy = b.dataset.test === 'buy', cur = mc || 3500, sol = Number(b.dataset.sol || 0.5);
+    const k = Math.max(1.25, demoImpact(sol));
+    handleTrade(b.dataset.test, sol, 'Test' + 'x'.repeat(36), null, buy ? cur * k : Math.max(2500, cur / k));
+  });
+  $('#testBurn').onclick = () => setSupply(supply * 0.95);
+  $('#reset').onclick = () => {
+    buys = sells = volume = 0; ath = 0;
+    if (!mint) { setSupply(INITIAL_SUPPLY, true); mc = 0; setMarketCap(3500, true); }
+    feedEl.innerHTML = '<li class="empty">Buys, sells and burns show up here as they happen.</li>';
+    updateStats(); save();
+  };
+
+  // ---------- Trading: wallet connect + quick buy / sell through PumpPortal ----------
+  const QUICK_DEFAULTS = { buys: [0.1, 0.5, 1], sells: [10, 40, 100], slippage: 10, priorityFee: 0.0005 };
+  let quick = (() => {
+    try { const q = JSON.parse(localStorage.getItem('boulder:quick') || 'null'); if (q && q.buys && q.sells) return { ...QUICK_DEFAULTS, ...q }; } catch (e) {}
+    return JSON.parse(JSON.stringify(QUICK_DEFAULTS));
+  })();
+  let wallet = null, solBal = null, tokBal = null, trading = false;
+  const tradeStatusEl = $('#tradeStatus'), walletBtn = $('#walletBtn'), walletInfo = $('#walletInfo');
+
+  function setTradeStatus(text, kind, link) {
+    tradeStatusEl.textContent = text;
+    tradeStatusEl.className = 'status' + (kind === 'err' ? ' err' : kind === 'ok' ? ' ok' : '');
+    if (link) {
+      tradeStatusEl.append(' ');
+      const a = document.createElement('a'); a.href = link; a.target = '_blank'; a.rel = 'noopener'; a.textContent = 'View on Solscan';
+      tradeStatusEl.append(a);
+    }
+  }
+  const fmtNum = n => n >= 1e6 ? compact(n) : n >= 1 ? n.toLocaleString(undefined, { maximumFractionDigits: 2 }) : n.toFixed(4);
+
+  function renderQuick() {
+    const buyEl = $('#buyBtns'), sellEl = $('#sellBtns');
+    buyEl.innerHTML = ''; sellEl.innerHTML = '';
+    const canTrade = !!mint && !trading;
+    quick.buys.forEach(v => {
+      const b = document.createElement('button'); b.className = 'buy'; b.textContent = trim(String(v)) + ' SOL';
+      b.disabled = !canTrade; b.onclick = () => trade('buy', v); buyEl.append(b);
+    });
+    quick.sells.forEach(v => {
+      const b = document.createElement('button'); b.className = 'sell'; b.textContent = v + '%';
+      b.disabled = !canTrade; b.onclick = () => trade('sell', v); sellEl.append(b);
+    });
+  }
+  function renderWallet() {
+    if (!wallet) {
+      walletBtn.textContent = 'Connect wallet';
+      walletInfo.textContent = mint ? 'Connect a Solana wallet to buy and sell right here.' : 'Trading turns on once the coin’s contract address is set.';
+      return;
+    }
+    walletBtn.textContent = 'Disconnect';
+    walletInfo.innerHTML = '';
+    const parts = [['Wallet ', shortAddr(wallet.pubkey)], [' · ', solBal == null ? '… SOL' : fmtNum(solBal) + ' SOL']];
+    if (mint) {
+      const usdVal = tokBal && mc && supply ? tokBal * (mc / supply) : 0;
+      parts.push([' · ', tokBal == null ? '… tokens' : fmtNum(tokBal) + ' tokens' + (usdVal ? ' (' + usd(usdVal) + ')' : '')]);
+    }
+    parts.forEach(([pre, val]) => { walletInfo.append(pre); const b = document.createElement('b'); b.textContent = val; walletInfo.append(b); });
+  }
+  function onMintChange() {
+    if (typeof updateSiteMint === 'function') updateSiteMint();
+    const has = !!mint;
+    $('#caRow').hidden = !has;
+    $('#caText').textContent = has ? shortAddr(mint) : '';
+    const pl = $('#pumpLink'); pl.hidden = !has; if (has) pl.href = 'https://pump.fun/coin/' + mint;
+    tokBal = null;
+    renderQuick(); renderWallet();
+    if (wallet) refreshBalances();
+  }
+
+  function getProvider() {
+    if (window.phantom && window.phantom.solana && window.phantom.solana.isPhantom) return window.phantom.solana;
+    if (window.solflare && window.solflare.isSolflare) return window.solflare;
+    if (window.backpack && window.backpack.connect) return window.backpack;
+    if (window.solana && window.solana.connect) return window.solana;
+    return null;
+  }
+  async function connectWallet() {
+    if (inPreview) { setTradeStatus('Wallets can’t connect inside this preview. Trading works once the page is on your own site.', 'err'); return false; }
+    const pv = getProvider();
+    if (!pv) {
+      setTradeStatus('No Solana wallet found in this browser. Install Phantom, Solflare or Backpack, then reload. On a phone, open this page inside your wallet app’s browser.', 'err');
+      return false;
+    }
+    try {
+      const r = await pv.connect();
+      const pk = (r && r.publicKey) || pv.publicKey;
+      if (!pk) throw new Error('No account returned');
+      wallet = { pv, pubkey: pk.toString() };
+      if (pv.on) {
+        pv.on('accountChanged', npk => { if (npk) { wallet.pubkey = npk.toString(); refreshBalances(); } else disconnectWallet(); });
+        pv.on('disconnect', () => disconnectWallet());
+      }
+      setTradeStatus('');
+      renderWallet(); refreshBalances();
+      return true;
+    } catch (e) {
+      setTradeStatus('Wallet connection was cancelled.', 'err');
+      return false;
+    }
+  }
+  function disconnectWallet() {
+    if (wallet && wallet.pv.disconnect) { try { wallet.pv.disconnect(); } catch (e) {} }
+    wallet = null; solBal = tokBal = null; renderWallet();
+  }
+  walletBtn.onclick = () => wallet ? disconnectWallet() : connectWallet();
+
+  async function rpc(method, params) {
+    const r = await fetch(RPC, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ jsonrpc: '2.0', id: 1, method, params }) });
+    const j = await r.json();
+    if (j.error) throw new Error(j.error.message || 'RPC error');
+    return j.result;
+  }
+  async function refreshBalances() {
+    if (!wallet) return;
+    try { const b = await rpc('getBalance', [wallet.pubkey]); solBal = b.value / 1e9; } catch (e) {}
+    if (mint) {
+      try {
+        const r = await rpc('getTokenAccountsByOwner', [wallet.pubkey, { mint }, { encoding: 'jsonParsed' }]);
+        tokBal = r.value.reduce((s, a) => s + Number(a.account.data.parsed.info.tokenAmount.uiAmount || 0), 0);
+      } catch (e) {}
+    }
+    renderWallet();
+  }
+
+  const toB64 = bytes => { let s = ''; for (let i = 0; i < bytes.length; i++) s += String.fromCharCode(bytes[i]); return btoa(s); };
+  async function trade(action, amount) {
+    if (!mint || trading) return;
+    if (!wallet && !(await connectWallet())) return;
+    if (!window.solanaWeb3) { setTradeStatus('The Solana library didn’t load. Check your connection and reload the page.', 'err'); return; }
+    if (action === 'buy' && solBal != null && solBal < amount + 0.003) { setTradeStatus(`Not enough SOL. You have ${fmtNum(solBal)} SOL and this buy needs about ${amount + 0.003} SOL with fees.`, 'err'); return; }
+    if (action === 'sell' && tokBal === 0) { setTradeStatus('You don’t hold any of this coin yet, so there’s nothing to sell.', 'err'); return; }
+    trading = true; renderQuick();
+    try {
+      setTradeStatus(action === 'buy' ? `Preparing a ${trim(String(amount))} SOL buy…` : `Preparing to sell ${amount}% of your bag…`);
+      const res = await fetch('https://pumpportal.fun/api/trade-local', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          publicKey: wallet.pubkey, action, mint,
+          amount: action === 'buy' ? amount : amount + '%',
+          denominatedInSol: action === 'buy' ? 'true' : 'false',
+          slippage: quick.slippage, priorityFee: quick.priorityFee, pool: 'auto'
+        })
+      });
+      if (res.status !== 200) throw new Error((await res.text()) || 'PumpPortal couldn’t build the trade');
+      const tx = solanaWeb3.VersionedTransaction.deserialize(new Uint8Array(await res.arrayBuffer()));
+      setTradeStatus('Confirm the trade in your wallet…');
+      let sig;
+      if (wallet.pv.signAndSendTransaction) {
+        const r = await wallet.pv.signAndSendTransaction(tx);
+        sig = (r && r.signature) || r;
+      } else {
+        const signed = await wallet.pv.signTransaction(tx);
+        sig = await rpc('sendTransaction', [toB64(signed.serialize()), { encoding: 'base64', maxRetries: 3 }]);
+      }
+      if (typeof sig !== 'string' && window.bs58) sig = bs58.encode(sig);
+      setTradeStatus(action === 'buy' ? 'Buy sent.' : 'Sell sent.', 'ok', typeof sig === 'string' ? 'https://solscan.io/tx/' + sig : null);
+      setTimeout(refreshBalances, 4000); setTimeout(refreshBalances, 12000);
+    } catch (e) {
+      const msg = String((e && e.message) || e);
+      if (/reject|cancel|denied|declined/i.test(msg)) setTradeStatus('Trade cancelled in your wallet.', 'err');
+      else setTradeStatus('The trade didn’t go through: ' + msg.slice(0, 160), 'err');
+    } finally {
+      trading = false; renderQuick();
+    }
+  }
+
+  // Quick trade settings
+  const settingsEl = $('#settings');
+  function fillSettings() {
+    quick.buys.forEach((v, i) => $('#qb' + i).value = v);
+    quick.sells.forEach((v, i) => $('#qs' + i).value = v);
+    $('#qSlip').value = quick.slippage; $('#qFee').value = quick.priorityFee;
+  }
+  $('#editQuick').onclick = () => { fillSettings(); settingsEl.hidden = !settingsEl.hidden; };
+  $('#cancelQuick').onclick = () => { settingsEl.hidden = true; };
+  $('#resetQuick').onclick = () => { quick = JSON.parse(JSON.stringify(QUICK_DEFAULTS)); fillSettings(); };
+  $('#saveQuick').onclick = () => {
+    const buys = [0, 1, 2].map(i => Number($('#qb' + i).value));
+    const sells = [0, 1, 2].map(i => Math.round(Number($('#qs' + i).value)));
+    const slip = Number($('#qSlip').value), fee = Number($('#qFee').value);
+    if (buys.some(v => !(v > 0) || v > 1000)) return setTradeStatus('Quick buy amounts must be more than 0 SOL.', 'err');
+    if (sells.some(v => !(v >= 1 && v <= 100))) return setTradeStatus('Quick sell amounts must be between 1% and 100%.', 'err');
+    if (!(slip >= 0.5 && slip <= 50)) return setTradeStatus('Slippage must be between 0.5% and 50%.', 'err');
+    if (!(fee >= 0 && fee <= 0.1)) return setTradeStatus('Priority fee must be between 0 and 0.1 SOL.', 'err');
+    quick = { buys, sells, slippage: slip, priorityFee: fee };
+    try { localStorage.setItem('boulder:quick', JSON.stringify(quick)); } catch (e) {}
+    settingsEl.hidden = true; renderQuick();
+    setTradeStatus('Quick trade settings saved on this device.', 'ok');
+  };
+  $('#copyCa').onclick = async () => {
+    try { await navigator.clipboard.writeText(mint); setTradeStatus('Contract address copied.', 'ok'); } catch (e) { setTradeStatus('Couldn’t copy. Long-press the address to copy it.', 'err'); }
+  };
+
+  // ---------- Launch your own boulder page ----------
+  const launchStatus = $('#launchStatus');
+  $('#makeLink').onclick = () => {
+    const ca = $('#launchMint').value.trim();
+    if (!/^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(ca)) {
+      launchStatus.textContent = 'That doesn’t look like a Solana contract address. Copy it from your coin’s pump.fun page.';
+      launchStatus.className = 'status err'; $('#launchOut').hidden = true; return;
+    }
+    const url = location.origin + location.pathname + '?mint=' + ca + '&clean=1';
+    $('#launchUrl').value = url; $('#openLaunch').href = url; $('#launchOut').hidden = false;
+    launchStatus.textContent = 'Your boulder page is ready. Share the link anywhere.'; launchStatus.className = 'status ok';
+  };
+  $('#copyLaunch').onclick = async () => {
+    try { await navigator.clipboard.writeText($('#launchUrl').value); launchStatus.textContent = 'Link copied.'; launchStatus.className = 'status ok'; }
+    catch (e) { $('#launchUrl').select(); launchStatus.textContent = 'Press Ctrl+C (or long-press) to copy the selected link.'; launchStatus.className = 'status'; }
+  };
+
+  // ---------- Website settings: fill these in when you have them ----------
+  const SITE = {
+    name: 'Boulder',            // coin name
+    ticker: '$BOULDER',         // ticker, with the $
+    x: '',                      // e.g. 'https://x.com/yourcoin'
+    telegram: '',               // e.g. 'https://t.me/yourcoin'
+    discord: '',                // e.g. 'https://discord.gg/yourcoin'
+    burnWallet: ''              // the creator wallet's PUBLIC address (never the private key)
+  };
+  if (SITE.burnWallet) {
+    const a = $('#burnWalletLink'); a.href = 'https://solscan.io/account/' + SITE.burnWallet; a.textContent = shortAddr(SITE.burnWallet) + ' on Solscan';
+    document.querySelectorAll('[data-burn-wallet]').forEach(el => el.hidden = false);
+  }
+  document.querySelectorAll('[data-site]').forEach(el => { const v = SITE[el.dataset.site]; if (v) el.textContent = v; });
+  document.title = SITE.name + ' (' + SITE.ticker + ') · Push the Boulder';
+  (() => {
+    const box = $('#socials');
+    [['X', SITE.x], ['Telegram', SITE.telegram], ['Discord', SITE.discord]].forEach(([label, url]) => {
+      if (!url) return;
+      const a = document.createElement('a'); a.href = url; a.target = '_blank'; a.rel = 'noopener'; a.textContent = label; box.append(a);
+    });
+    if (!box.children.length) box.hidden = true;
+  })();
+  function updateSiteMint() {
+    // Site-wide buy links and contract address follow the coin set in COIN_MINT (or ?mint=)
+    const coin = mint || COIN_MINT;
+    document.querySelectorAll('.buy-link').forEach(a => {
+      if (coin) { a.href = 'https://pump.fun/coin/' + coin; a.target = '_blank'; }
+      else { a.href = '#buy'; a.removeAttribute('target'); }
+    });
+    document.querySelectorAll('[data-ca-wrap]').forEach(el => el.hidden = !coin);
+    document.querySelectorAll('[data-ca-soon]').forEach(el => el.hidden = !!coin);
+    document.querySelectorAll('[data-ca]').forEach(el => el.textContent = coin ? shortAddr(coin) : '');
+  }
+  document.querySelectorAll('[data-copy-ca]').forEach(b => b.onclick = async () => {
+    const coin = mint || COIN_MINT;
+    try { await navigator.clipboard.writeText(coin); b.textContent = 'Copied'; setTimeout(() => b.textContent = 'Copy', 1500); } catch (e) {}
+  });
+
+
+  // ---------- Burn plan: edit freely ----------
+  // `at` is the market cap in USD. After you burn at a step, paste the burn's Solscan link into `tx`
+  // and that step shows as burned with a link holders can check.
+  const BURN_PLAN = {
+    regular: 'Between milestones, creator fees are also claimed and burned at least once a week. Plans can change; every burn is posted with its transaction.',
+    steps: [
+      { at: 10_000,     title: 'First burn',          detail: 'Claim all creator fees so far, buy back and burn.', tx: '' },
+      { at: 25_000,     title: 'Burn',                detail: 'Claim creator fees, buy back and burn.', tx: '' },
+      { at: 50_000,     title: 'Burn',                detail: 'Claim creator fees, buy back and burn.', tx: '' },
+      { at: 100_000,    title: 'Six-figure burn',     detail: 'Claim creator fees, buy back and burn.', tx: '' },
+      { at: 250_000,    title: 'Burn',                detail: 'Claim creator fees, buy back and burn.', tx: '' },
+      { at: 500_000,    title: 'Burn',                detail: 'Claim creator fees, buy back and burn.', tx: '' },
+      { at: 1_000_000,  title: 'Million-dollar burn', detail: 'Claim creator fees, buy back and burn.', tx: '' },
+      { at: 5_000_000,  title: 'Burn',                detail: 'Claim creator fees, buy back and burn.', tx: '' },
+      { at: 10_000_000, title: 'Big burn',            detail: 'Claim creator fees, buy back and burn.', tx: '' }
+    ]
+  };
+  let lastPlanKey = '';
+  function renderPlan() {
+    const list = $('#planList'); if (!list) return;
+    const key = Math.round(Math.log10(Math.max(mc, 1)) * 200) + ':' + Math.round(Math.log10(Math.max(ath, 1)) * 200);
+    if (key === lastPlanKey) return;
+    lastPlanKey = key;
+    $('#planRegular').textContent = BURN_PLAN.regular || '';
+    list.innerHTML = '';
+    let nextFound = false;
+    BURN_PLAN.steps.forEach((st, i) => {
+      let status, cls;
+      if (st.tx) { status = 'Burned'; cls = 'done'; }
+      else if (ath >= st.at) { status = 'Reached, burn coming'; cls = 'reached'; }
+      else if (!nextFound) { status = 'Next'; cls = 'next'; nextFound = true; }
+      else { status = 'Planned'; cls = ''; }
+      const li = document.createElement('li');
+      li.className = 'plan-item' + (cls === 'next' ? ' is-next' : cls === 'done' ? ' is-done' : '');
+      const m = document.createElement('div'); m.className = 'plan-mc'; m.textContent = usd(st.at);
+      const body = document.createElement('div'); body.className = 'plan-body';
+      const h = document.createElement('h3'); h.textContent = st.title;
+      const d = document.createElement('p'); d.textContent = st.detail + ' ';
+      if (st.tx) { const a = document.createElement('a'); a.href = st.tx; a.target = '_blank'; a.rel = 'noopener'; a.textContent = 'View the burn'; d.append(a); }
+      body.append(h, d);
+      const pill = document.createElement('span'); pill.className = 'pill ' + cls; pill.textContent = status;
+      li.append(m, body, pill);
+      if (cls === 'next') {
+        const prev = i > 0 ? BURN_PLAN.steps[i - 1].at : Math.min(3000, st.at / 2);
+        const frac = mc > prev ? Math.min(1, Math.log(mc / prev) / Math.log(st.at / prev)) : 0;
+        const prog = document.createElement('div'); prog.className = 'plan-progress';
+        const bar = document.createElement('div'); bar.className = 'plan-bar';
+        const fill = document.createElement('i'); fill.style.width = Math.round(frac * 100) + '%'; bar.append(fill);
+        const note = document.createElement('small');
+        note.textContent = mc ? `Market cap ${usd(mc)} of ${usd(st.at)}` : 'Waiting for the first trade';
+        prog.append(bar, note); li.append(prog);
+      }
+      list.append(li);
+    });
+  }
+
+  // ---------- Update ----------
+  const altEl = $('#alt'), subEl = $('#sub');
+  let lastAltText = '', lastSub = '';
+  function update(dt) {
+    const prevF = shownF;
+
+    const sd = supply - shownSupply;
+    if (Math.abs(sd) > 1) {
+      shownSupply += sd * Math.min(1, dt * 1.6);
+      if (Math.abs(supply - shownSupply) < 1000) shownSupply = supply;
+      setGeometry();
+    }
+
+    // Up comes in heaves with each push-off; down is a slow, grinding slide
+    const targetF = fracFor(mc);
+    const diff = targetF - shownF;
+    if (power.heaveT >= 0) {
+      power.heaveT += dt;
+      if (!power.heaveFired && power.heaveT >= 0.32) { power.heaveFired = true; heaveBurst(); }
+      if (power.heaveT > 1.2) power.heaveT = -1;
+    }
+    power.superT = Math.max(0, power.superT - dt);
+    power.superLevel += ((power.superT > 0 ? 1 : 0) - power.superLevel) * Math.min(1, dt * 3);
+    power.shake *= Math.exp(-dt * 7);
+    rings.forEach(r => { r.r += (r.big ? U * 9 : U * 6) * dt; r.life -= dt * 1.6; });
+    rings = rings.filter(r => r.life > 0);
+    if (power.superLevel > 0.05 && pose.core && !reduceMotion) {
+      for (let n = 40 * power.superLevel * dt + Math.random(); n >= 1; n--) sparks.push({
+        x: pose.core.x + (Math.random() - 0.5) * U * 1.6, y: pose.core.y + (Math.random() - 0.2) * U * 1.4,
+        vy: -U * (0.8 + Math.random() * 1.4), life: 1, r: 1 + Math.random() * 2
+      });
+    }
+    sparks.forEach(sp => { sp.y += sp.vy * dt; sp.life -= dt * 1.3; });
+    sparks = sparks.filter(sp => sp.life > 0);
+
+    // Super strength makes the climb fast and easy
+    const heave = (0.55 + 0.9 * pose.pulse) * (1 + 1.8 * power.superLevel);
+    // A long way to go on the longer stretches of the trail: fly there instead of walking for ages
+    if (!flight.active && flight.hold <= 0 && diff * L > Math.max(W, H) * 2.5) startFlight('soar', mc);
+    if (flight.active) {
+      flight.t += dt;
+      const k = Math.min(1, flight.t / flight.dur), e = k < 0.5 ? 4 * k * k * k : 1 - Math.pow(-2 * k + 2, 3) / 2;
+      shownF = flight.from + (flight.to - flight.from) * e;
+      flight.lift = Math.min(H * 0.3, R * 4.5) * Math.pow(Math.sin(Math.PI * k), 0.6);
+      moving = 1;
+      // rocket jets from his feet and a sparkle trail behind the boulder
+      if (pose.feetWorld && !reduceMotion) pose.feetWorld.forEach(ft => {
+        for (let n = 0; n < 3; n++) flames.push({ x: ft.x + (Math.random() - 0.5) * U * 0.2, y: ft.y, vx: -U * (0.5 + Math.random()), vy: U * (1.5 + Math.random() * 2), life: 0.8, r: U * (0.08 + Math.random() * 0.1) });
+      });
+      const bc = boulderCenter();
+      for (let n = 0; n < 3; n++) trail.push({ x: bc.x - R * (0.6 + Math.random() * 0.8), y: bc.y + (Math.random() - 0.5) * R * 1.4, life: 1, c: ['#fee761', '#2ce8f5', '#f6757a', '#ffffff'][(Math.random() * 4) | 0] });
+      if (k >= 1) {
+        flight.active = false; flight.lift = 0; flight.hold = 1.4;
+        const f = frameAt(boulderS());
+        rings.push({ x: f.x, y: f.y, r: R * 0.5, life: 1.2, big: true });
+        power.shake = U * 0.8;
+        for (let n = 0; n < 24; n++) dust.push({ x: f.x + (Math.random() - 0.5) * R * 2, y: f.y, vx: (Math.random() - 0.5) * 4, vy: -Math.random() * 2.5, life: 1, r: 2 + Math.random() * 3 });
+      }
+    } else if (flight.hold > 0) {
+      flight.hold -= dt; moving = 0;
+    } else if (diff * L > 1) { shownF = Math.min(targetF, shownF + Math.min(U * 10, Math.max(diff * L * 2.6, U * 2)) * heave * dt / L); moving = 1; }
+    else if (diff * L < -1) { shownF = Math.max(targetF, shownF - Math.max(U * 0.7, Math.min(-diff * L * 0.6, Math.max(U * 6, -diff * L * 0.3))) * dt / L); moving = -1; }
+    else moving = 0;
+    trail.forEach(t => { t.x -= U * 0.6 * dt; t.life -= dt * 1.6; });
+    trail = trail.filter(t => t.life > 0);
+
+    const ds = (shownF - prevF) * L;
+    if (!flight.active) updateClimber(dt, ds);
+
+    // Camera keeps the boulder a little left of centre and below the middle
+    if (L > 1) {
+      const c = boulderCenter();
+      const tx = c.x - W * 0.42, ty = Math.min(0, c.y - H * 0.62);
+      if (!cam.ready) { cam.x = tx; cam.y = ty; cam.ready = true; }
+      const k = Math.min(1, dt * (flight.active ? 5 : 3));
+      cam.x += (tx - cam.x) * k; cam.y += (ty - cam.y) * k;
+    }
+
+    if (moving === -1 && Math.random() < 0.6) {
+      const f = frameAt(footS);
+      dust.push({ x: f.x, y: f.y, vx: -Math.random() * 1.5, vy: -Math.random() * 1.2, life: 1, r: 2 + Math.random() * 3 });
+    }
+    floaters.forEach(f => { f.y -= 30 * dt; f.life -= dt * 0.7; });
+    floaters = floaters.filter(f => f.life > 0);
+    dust.forEach(d => { d.x += d.vx; d.y += d.vy; d.life -= dt * 1.4; });
+    dust = dust.filter(d => d.life > 0);
+    embers.forEach(e => { e.x += e.vx; e.y += e.vy; e.vy *= 0.99; e.life -= dt * 0.8; });
+    embers = embers.filter(e => e.life > 0);
+
+    // Fire on his feet for as long as the burn is shrinking the mountain
+    fireHold = Math.max(0, fireHold - dt);
+    const burning = shownSupply - supply > 1000 || fireHold > 0;
+    fireLevel += ((burning ? 1 : 0) - fireLevel) * Math.min(1, dt * (burning ? 6 : 1.5));
+    if (fireLevel > 0.02 && pose.feetWorld) {
+      const rate = (reduceMotion ? 18 : 70) * fireLevel * dt;
+      pose.feetWorld.forEach(ft => {
+        for (let n = rate + Math.random(); n >= 1; n--) flames.push({
+          x: ft.x + (Math.random() - 0.3) * U * 0.35, y: ft.y - Math.random() * U * 0.08,
+          vx: (Math.random() - 0.5) * U * 0.6, vy: -(U * 1.6 + Math.random() * U * 2.2) * (0.6 + 0.4 * fireLevel),
+          life: 1, r: U * (0.09 + Math.random() * 0.13)
+        });
+        if (Math.random() < 0.08 * fireLevel) embers.push({ x: ft.x, y: ft.y - U * 0.2, vx: (Math.random() - 0.5) * 1.2, vy: -1 - Math.random() * 1.5, life: 0.8, r: 1 + Math.random() * 1.5 });
+      });
+    }
+    flames.forEach(f => { f.x += f.vx * dt; f.y += f.vy * dt; f.vx *= 0.96; f.life -= dt * 2.4; });
+    flames = flames.filter(f => f.life > 0);
+    clouds.forEach(c => { c.x += c.v * dt; if (c.x - c.w / 2 > W) c.x = -c.w / 2; });
+
+    const altText = mc ? usd(mc) : '$0';
+    if (altText !== lastAltText) { altEl.textContent = altText; lastAltText = altText; }
+    const sub = power.superT > 0 ? 'Super strength, ' + Math.ceil(power.superT) + 's left' : 'Market cap. Next milestone ' + usd(nextMilestone(mc));
+    if (sub !== lastSub) { subEl.textContent = sub; lastSub = sub; }
+  }
+  function limb(a, b, c, w1, w2, color) {
+    ctx.strokeStyle = color; ctx.lineCap = 'round';
+    ctx.lineWidth = w1; ctx.beginPath(); ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y); ctx.stroke();
+    ctx.lineWidth = w2; ctx.beginPath(); ctx.moveTo(b.x, b.y); ctx.lineTo(c.x, c.y); ctx.stroke();
+  }
+
+  // ---------- Climber: planted feet, two-bone legs and arms, effort pulses ----------
+  const pose = { lean: 0.38, feet: null, pulse: 0, sF: 0, slip: 0 };
+  const STEP = () => U * 0.95;
+
+  // Solve two-bone IK; bend = +1 or -1 picks which way the joint folds
+  function ik(a, c, l1, l2, bend) {
+    let dx = c.x - a.x, dy = c.y - a.y, d = Math.hypot(dx, dy) || 0.001;
+    const reach = (l1 + l2) * 0.999;
+    if (d > reach) { dx *= reach / d; dy *= reach / d; d = reach; }
+    const th = Math.atan2(dy, dx);
+    const cosA = Math.max(-1, Math.min(1, (l1 * l1 + d * d - l2 * l2) / (2 * l1 * d)));
+    const a1 = th + bend * Math.acos(cosA);
+    const j = { x: a.x + Math.cos(a1) * l1, y: a.y + Math.sin(a1) * l1 };
+    return { joint: j, end: { x: a.x + dx, y: a.y + dy } };
+  }
+
+  // Where his body sits for a given foot position. Upright, arms raised overhead into the boulder.
+  const TORSO = () => U * 0.95, ARM = () => U * 1.25;
+  function bodyFrame(s, lean, c) {
+    const bx = Math.sin(lean), by = -Math.cos(lean);
+    const F = frameAt(s);
+    const hip = { x: F.x + F.tx * U * 0.3, y: F.y + F.ty * U * 0.3 - U * 1.0 };
+    const sh = { x: hip.x + bx * TORSO(), y: hip.y + by * TORSO() };
+    return { F, hip, sh, bx, by };
+  }
+  // Palms sit on the lower, downhill side of the boulder (angle measured from its centre), so his arms drive up into it
+  const PALM_F = 2.25, PALM_B = 2.05;
+  function palmPoint(c, a) {
+    // keep the palms on the same spot of the slope even as the boulder rolls
+    const f = frameAt(boulderS()), slopeA = Math.atan2(f.ty, f.tx);
+    const aa = a + slopeA + 0.8;
+    return { x: c.x + Math.cos(aa) * R * 0.98, y: c.y + Math.sin(aa) * R * 0.98 };
+  }
+  function solveFeet(lean) {
+    const sb = boulderS(), c = boulderCenter();
+    let sF = sb - R * 1.9;
+    for (let i = 0; i < 6; i++) {
+      const sh = bodyFrame(sF, lean, c).sh, pp = palmPoint(c, (PALM_F + PALM_B) / 2);
+      const d = Math.hypot(sh.x - pp.x, sh.y - pp.y);
+      sF += (d - ARM() * 0.93) * 1.1;
+    }
+    return Math.min(sF, sb - R * 0.9);
+  }
+
+  function updateClimber(dt, ds) {
+    if (L <= 1) return;
+    const speed = Math.abs(ds) / Math.max(dt, 1e-4); // px per second along the slope
+    let leanTarget = moving === 1 ? 0.34 + Math.min(1, pose.pulse) * 0.06 : moving === -1 ? 0.5 : 0.28;
+    // Mighty heave: sink low, then explode forward
+    const ht = power.heaveT;
+    if (ht >= 0) leanTarget += ht < 0.32 ? 0.16 * (ht / 0.32) : -0.08 * Math.max(0, 1 - (ht - 0.32) / 0.6);
+    // Super strength: stands tall and pushes like it weighs nothing
+    leanTarget += ((moving === 1 ? 0.24 : 0.16) - leanTarget) * power.superLevel;
+    pose.lean += (leanTarget - pose.lean) * Math.min(1, dt * (ht >= 0 ? 12 : 5));
+    const sF = solveFeet(pose.lean);
+    pose.sF = sF; footS = sF;
+    const S = STEP();
+
+    if (!pose.feet || Math.abs(pose.feet[0].u * L - sF) > S * 4 || Math.abs(pose.feet[1].u * L - sF) > S * 4) {
+      pose.feet = [{ u: (sF - S * 0.45) / L, lift: 0, sw: null }, { u: (sF + S * 0.35) / L, lift: 0, sw: null }];
+    }
+    const feet = pose.feet;
+
+    if (moving === -1) {
+      // Braced and skidding: both feet dragged back with the body
+      feet.forEach((f, i) => {
+        f.sw = null; f.lift *= 0.8;
+        const want = sF + (i === 0 ? -S * 0.65 : S * 0.45);
+        f.u += (want / L - f.u) * Math.min(1, dt * 10);
+      });
+    } else {
+      // Near the summit he barely gains ground, so the planted foot slips back and he keeps re-stepping
+      if (moving === 1 && speed < U * 1.2) {
+        pose.slip = U * 1.1;
+        feet.forEach(f => { if (!f.sw) f.u -= (pose.slip * dt) / L; });
+      }
+      const swinging = feet.find(f => f.sw);
+      if (!swinging) {
+        const rear = feet[0].u <= feet[1].u ? feet[0] : feet[1];
+        const front = rear === feet[0] ? feet[1] : feet[0];
+        const behind = sF - rear.u * L, ahead = front.u * L - sF;
+        const need = moving === 1 ? behind > S * 0.62 : (behind > S * 1.1 || ahead > S * 1.4 || -behind > S * 0.6);
+        if (need) {
+          const dur = moving === 1 ? Math.max(0.16, Math.min(0.36, (S * 1.4) / Math.max(speed, 1))) : 0.38;
+          rear.sw = { from: rear.u * L, t: 0, dur };
+          if (moving === 1) {
+            pose.pulse = 1;
+            const fp = frameAt(rear.u * L);
+            if (!reduceMotion) for (let i = 0; i < 3; i++) dust.push({ x: fp.x, y: fp.y, vx: -0.3 - Math.random(), vy: -Math.random() * 0.8, life: 0.7, r: 1.5 + Math.random() * 2 });
+          }
+        }
+      }
+      feet.forEach(f => {
+        if (!f.sw) { f.lift = 0; return; }
+        f.sw.t += dt / f.sw.dur;
+        const k = Math.min(1, f.sw.t);
+        const e = k < 0.5 ? 2 * k * k : 1 - ((-2 * k + 2) ** 2) / 2;
+        const to = sF + S * (moving === 1 ? 0.55 : 0.35);
+        f.u = (f.sw.from + (to - f.sw.from) * e) / L;
+        f.lift = Math.sin(Math.PI * k) * U * (moving === 1 ? 0.2 : 0.12);
+        if (k >= 1) { f.sw = null; f.lift = 0; }
+      });
+    }
+    pose.pulse *= Math.exp(-dt * 4.5);
+  }
+
+  function drawClimber(time, p) {
+    if (!pose.feet) return;
+    const c = boulderCenter();
+    const lean = pose.lean + Math.sin(time / 650) * (moving ? 0 : 0.015); // idle breathing
+    const fr = bodyFrame(pose.sF, lean, c);
+    const { bx, by } = fr;
+    const px = -by, py = bx;                                    // perpendicular (front of the body)
+    const feetPts = pose.feet.map(f => {
+      const q = frameAt(f.u * L);
+      return { x: q.x + q.nx * U * 0.16, y: q.y + q.ny * U * 0.16 - f.lift, ang: Math.atan2(q.ty, q.tx), lift: f.lift, u: f.u, ground: { x: q.x, y: q.y } };
+    });
+    const sep = Math.abs(feetPts[0].x - feetPts[1].x);
+    const drop = Math.min(U * 0.08, sep * 0.07);
+    const ht = power.heaveT;
+    const crouch = ht < 0 ? 0 : ht < 0.32 ? U * 0.18 * (ht / 0.32) : U * 0.18 * Math.max(0, 1 - (ht - 0.32) / 0.2);
+    const hip = { x: fr.hip.x + bx * pose.pulse * U * 0.05, y: fr.hip.y + drop + crouch - pose.pulse * U * 0.03 - power.superLevel * U * 0.05 };
+    const sh = { x: hip.x + bx * TORSO(), y: hip.y + by * TORSO() };
+
+    // Bronze skin, lit warm from the sun's side
+    const skin = css(mixc('#5e3a26', '#8a5634', p)), shade = css(mixc('#2e1b12', '#4a2b1b', p));
+    const light = css(mixc('#a06a44', '#e0a066', p));
+    const hair = '#1e1410', cloth = css(mixc('#3a2a24', '#5a3f2e', p));
+    const LX = 0.55, LY = -0.83;                                // light direction (up and toward the sun)
+    const THIGH = U * 0.62, SHIN = U * 0.6;
+
+    // Muscled limb: a tapered bone with a muscle belly; shadow pass, then a lit pass nudged toward the light
+    function muscle(a, b, w1, w2, base, hi, bulge = 0) {
+      const dx = b.x - a.x, dy = b.y - a.y, len = Math.hypot(dx, dy) || 1, ang = Math.atan2(dy, dx);
+      const pass = (col, k, ox, oy) => {
+        ctx.fillStyle = col; ctx.strokeStyle = col; ctx.lineCap = 'round';
+        ctx.lineWidth = w2 * k;
+        ctx.beginPath(); ctx.moveTo(a.x + ox, a.y + oy); ctx.lineTo(b.x + ox, b.y + oy); ctx.stroke();
+        ctx.beginPath(); ctx.arc(a.x + ox, a.y + oy, (w1 / 2) * k, 0, Math.PI * 2); ctx.fill();
+        ctx.beginPath();
+        ctx.ellipse(a.x + dx * 0.4 + ox, a.y + dy * 0.4 + oy, len * 0.42, (Math.max(w1, w2) / 2 + bulge) * k, ang, 0, Math.PI * 2);
+        ctx.fill();
+      };
+      pass(base, 1, 0, 0);
+      if (hi) pass(hi, 0.5, LX * w2 * 0.28, LY * w2 * 0.28);
+    }
+
+    // Legs: knees fold forward up the slope; calves bulge
+    const legs = feetPts.map(ft => {
+      const s = ik(hip, ft, THIGH, SHIN, -1);
+      return { knee: s.joint, ft: s.end, ang: ft.ang, lift: ft.lift, ground: ft.ground };
+    });
+    const back = pose.feet[0].u <= pose.feet[1].u ? 0 : 1;
+    pose.feetWorld = legs.map(l => l.ft);
+    pose.core = { x: (hip.x + sh.x) / 2, y: (hip.y + sh.y) / 2 };
+
+    // Arms reach overhead; palms on the underside of the boulder, elbows flare out and down
+    const armB = ik(sh, palmPoint(c, PALM_B), ARM() * 0.52, ARM() * 0.5, 1);
+    const armF = ik(sh, palmPoint(c, PALM_F), ARM() * 0.52, ARM() * 0.5, 1);
+
+    const drawLeg = (leg, base, hi, rear) => {
+      muscle(hip, leg.knee, U * 0.34, U * 0.2, base, hi, U * 0.04);
+      muscle(leg.knee, leg.ft, U * 0.2, U * 0.11, base, hi, U * 0.06);
+      // Foot: heel, arch and toes resting flat on the slope. The rear foot rolls up onto its toes as it drives.
+      ctx.save(); ctx.translate(leg.ft.x, leg.ft.y);
+      let a = leg.ang;
+      if (rear && moving === 1 && !leg.lift) a += 0.45;
+      if (leg.lift) a += 0.35;
+      ctx.rotate(a);
+      const f = U * 1.45;
+      ctx.fillStyle = base;
+      ctx.beginPath();
+      ctx.moveTo(-f * 0.07, -f * 0.02);                                   // back of the ankle
+      ctx.quadraticCurveTo(-f * 0.13, f * 0.06, -f * 0.09, f * 0.11);   // heel
+      ctx.lineTo(f * 0.22, f * 0.12);                                   // sole
+      ctx.quadraticCurveTo(f * 0.31, f * 0.12, f * 0.3, f * 0.07);      // toes
+      ctx.quadraticCurveTo(f * 0.18, f * 0.03, f * 0.06, -f * 0.04);    // instep
+      ctx.closePath(); ctx.fill();
+      if (hi) {
+        ctx.fillStyle = hi; ctx.globalAlpha = 0.6;
+        ctx.beginPath(); ctx.ellipse(f * 0.12, f * 0.03, f * 0.1, f * 0.03, -0.25, 0, Math.PI * 2); ctx.fill();
+        ctx.globalAlpha = 1;
+      }
+      // sandal sole
+      ctx.strokeStyle = '#2a1a12'; ctx.lineWidth = f * 0.045; ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.moveTo(-f * 0.09, f * 0.125); ctx.lineTo(f * 0.25, f * 0.13); ctx.stroke();
+      // toe line and a strap
+      ctx.strokeStyle = 'rgba(30,18,12,0.55)'; ctx.lineWidth = f * 0.025;
+      ctx.beginPath(); ctx.moveTo(f * 0.24, f * 0.08); ctx.lineTo(f * 0.27, f * 0.11); ctx.stroke();
+      ctx.strokeStyle = 'rgba(60,40,30,0.85)'; ctx.lineWidth = f * 0.035;
+      ctx.beginPath(); ctx.moveTo(-f * 0.02, f * 0.0); ctx.lineTo(f * 0.08, f * 0.1); ctx.stroke();
+      ctx.restore();
+      // contact shadow
+      if (!leg.lift) {
+        ctx.fillStyle = 'rgba(8,5,20,0.3)';
+        ctx.beginPath(); ctx.ellipse(leg.ground.x + Math.cos(leg.ang) * f * 0.08, leg.ground.y + Math.sin(leg.ang) * f * 0.08, f * 0.24, f * 0.05, leg.ang, 0, Math.PI * 2); ctx.fill();
+      }
+    };
+    const drawArm = (arm, base, hi) => {
+      muscle(sh, arm.joint, U * 0.22, U * 0.15, base, hi, U * 0.04);
+      muscle(arm.joint, arm.end, U * 0.16, U * 0.1, base, hi, U * 0.025);
+      ctx.fillStyle = base; ctx.beginPath(); ctx.arc(arm.end.x, arm.end.y, U * 0.075, 0, Math.PI * 2); ctx.fill();
+    };
+
+    // Far side first, in shadow
+    drawLeg(legs[back], shade, null, true);
+    drawArm(armB, shade, null);
+
+    // Torso: broad back and shoulders tapering to a narrow waist
+    const W_SH = U * 0.37, W_WA = U * 0.15;
+    const torsoPath = (k, ox, oy) => {
+      ctx.beginPath();
+      ctx.moveTo(sh.x - px * W_SH * 0.85 * k + ox, sh.y - py * W_SH * 0.85 * k + oy);
+      ctx.quadraticCurveTo(sh.x + bx * U * 0.08 + ox, sh.y + by * U * 0.08 + oy, sh.x + px * W_SH * k + ox, sh.y + py * W_SH * k + oy);
+      ctx.quadraticCurveTo((sh.x + hip.x) / 2 + px * W_SH * 1.15 * k + ox, (sh.y + hip.y) / 2 + py * W_SH * 1.15 * k + oy, hip.x + px * W_WA * k + ox, hip.y + py * W_WA * k + oy);
+      ctx.lineTo(hip.x - px * W_WA * 1.1 * k + ox, hip.y - py * W_WA * 1.1 * k + oy);
+      ctx.quadraticCurveTo((sh.x + hip.x) / 2 - px * W_SH * 1.05 * k + ox, (sh.y + hip.y) / 2 - py * W_SH * 1.05 * k + oy, sh.x - px * W_SH * 0.85 * k + ox, sh.y - py * W_SH * 0.85 * k + oy);
+      ctx.closePath();
+    };
+    ctx.fillStyle = skin; torsoPath(1, 0, 0); ctx.fill();
+    ctx.fillStyle = light; torsoPath(0.6, LX * U * 0.07, LY * U * 0.07); ctx.globalAlpha = 0.7; ctx.fill(); ctx.globalAlpha = 1;
+    // Spine groove and shoulder-blade shadow
+    ctx.strokeStyle = shade; ctx.lineWidth = U * 0.03; ctx.lineCap = 'round'; ctx.globalAlpha = 0.45;
+    ctx.beginPath(); ctx.moveTo(hip.x - px * U * 0.02, hip.y - py * U * 0.02);
+    ctx.quadraticCurveTo((sh.x + hip.x) / 2 - px * U * 0.1, (sh.y + hip.y) / 2 - py * U * 0.1, sh.x - px * U * 0.08 + bx * -U * 0.1, sh.y - py * U * 0.08 + by * -U * 0.1); ctx.stroke(); ctx.globalAlpha = 1;
+    // Deltoid
+    ctx.fillStyle = skin; ctx.beginPath(); ctx.arc(sh.x, sh.y, U * 0.15, 0, Math.PI * 2); ctx.fill();
+
+    // Loincloth
+    ctx.fillStyle = cloth;
+    ctx.beginPath();
+    ctx.moveTo(hip.x - px * W_WA * 1.25 + bx * U * 0.1, hip.y - py * W_WA * 1.25 + by * U * 0.1);
+    ctx.lineTo(hip.x + px * W_WA * 1.2 + bx * U * 0.1, hip.y + py * W_WA * 1.2 + by * U * 0.1);
+    ctx.lineTo(hip.x + px * W_WA * 1.1, hip.y + U * 0.2);
+    ctx.lineTo(hip.x - px * W_WA * 0.2, hip.y + U * 0.12);
+    ctx.lineTo(hip.x - px * W_WA * 1.3, hip.y + U * 0.18);
+    ctx.closePath(); ctx.fill();
+
+    // Near leg
+    drawLeg(legs[1 - back], skin, light, false);
+
+    // Near arm, then the head between the raised arms
+    drawArm(armF, skin, light);
+
+    // Thick neck and a head tipped back, looking up at the boulder
+    const toC = Math.atan2(c.y - sh.y, c.x - sh.x);
+    const headDir = { x: bx * 0.55 + Math.cos(toC) * 0.45, y: by * 0.55 + Math.sin(toC) * 0.45 };
+    const hm = Math.hypot(headDir.x, headDir.y) || 1; headDir.x /= hm; headDir.y /= hm;
+    const neck = { x: sh.x + headDir.x * U * 0.14, y: sh.y + headDir.y * U * 0.14 };
+    const head = { x: sh.x + headDir.x * U * 0.3 + px * U * 0.08, y: sh.y + headDir.y * U * 0.3 + py * U * 0.08 };
+    ctx.strokeStyle = skin; ctx.lineWidth = U * 0.17; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(sh.x, sh.y); ctx.lineTo(neck.x, neck.y); ctx.stroke();
+    ctx.fillStyle = skin; ctx.beginPath(); ctx.arc(head.x, head.y, U * 0.19, 0, Math.PI * 2); ctx.fill();
+    // Face catches the light; short dark hair on the back of the head
+    const faceA = Math.atan2(headDir.y, headDir.x) + 1.2;
+    ctx.fillStyle = light; ctx.beginPath(); ctx.arc(head.x + Math.cos(faceA) * U * 0.06, head.y + Math.sin(faceA) * U * 0.06, U * 0.12, 0, Math.PI * 2); ctx.fill();
+    const hairA = Math.atan2(headDir.y, headDir.x);
+    ctx.fillStyle = hair; ctx.beginPath(); ctx.arc(head.x, head.y, U * 0.2, hairA - 2.3, hairA + 0.5); ctx.closePath(); ctx.fill();
+
+
+    if (moving && !reduceMotion && power.superLevel < 0.5) {
+      const t = (time / 420) % 1;
+      ctx.fillStyle = `rgba(180,220,255,${0.9 * (1 - t)})`;
+      ctx.beginPath(); ctx.arc(head.x - px * U * 0.2, head.y + t * U * 0.6, U * 0.05, 0, Math.PI * 2); ctx.fill();
+    }
+  }
+  function drawSandal(leg, color) {
+    ctx.save(); ctx.translate(leg.ft.x, leg.ft.y); ctx.rotate(leg.ang);
+    ctx.fillStyle = color; ctx.beginPath(); ctx.ellipse(U * 0.06, 0, U * 0.16, U * 0.06, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.restore();
+  }
+
+
+  // ---------- Draw ----------
+  function draw(time) {
+    const p = shownF;                          // night at the foot, sunrise near the summit
+    const skyTop = mixc('#262b44', '#0099db', p);
+    const skyMid = mixc('#be4a2f', '#f6757a', p);
+    const horizon = mixc('#f77622', '#fee761', p);
+    const climbPx = -cam.y;                    // how far the camera has risen
+
+    const g = ctx.createLinearGradient(0, 0, 0, H);
+    g.addColorStop(0, css(skyTop)); g.addColorStop(0.55, css(skyMid)); g.addColorStop(0.85, css(horizon));
+    ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+
+    const starA = Math.max(0, 1 - p * 1.5);
+    if (starA > 0) stars.forEach(s => {
+      ctx.fillStyle = `rgba(255,248,236,${starA * (0.45 + 0.55 * Math.sin(time / 800 + s.tw))})`;
+      ctx.fillRect(s.x, s.y, s.s, s.s);
+    });
+
+    const sunR = Math.min(W, H) * 0.075, sunX = W * 0.66, sunY = H * (0.95 - 0.6 * p);
+    const halo = ctx.createRadialGradient(sunX, sunY, 0, sunX, sunY, sunR * 6);
+    halo.addColorStop(0, `rgba(255,214,150,${0.25 + 0.5 * p})`); halo.addColorStop(1, 'rgba(255,214,150,0)');
+    ctx.fillStyle = halo; ctx.fillRect(0, 0, W, H);
+    const disc = ctx.createRadialGradient(sunX, sunY - sunR * 0.3, 0, sunX, sunY, sunR);
+    disc.addColorStop(0, `rgba(255,246,222,${0.5 + 0.5 * p})`); disc.addColorStop(1, `rgba(255,190,120,${0.4 + 0.5 * p})`);
+    ctx.fillStyle = disc; ctx.beginPath(); ctx.arc(sunX, sunY, sunR, 0, Math.PI * 2); ctx.fill();
+
+    // Clouds drift past as he climbs (parallax)
+    ctx.globalAlpha = 0.5 + 0.3 * p;
+    clouds.forEach(c => {
+      const y = ((c.y + climbPx * 0.25) % (H * 1.8) + H * 1.8) % (H * 1.8) - H * 0.4;
+      ctx.drawImage(c.img, c.x - c.w / 2, y - c.img.height / 2);
+    });
+    ctx.globalAlpha = 1;
+
+    // Distant ranges sink below him as he gains height
+    const rangeNear = mixc('#68386c', '#b55088', p);
+    ranges.forEach((pts, k) => {
+      const haze = [0.7, 0.5, 0.32, 0.16][k];
+      const off = climbPx * (0.06 + k * 0.05);
+      if (off > H * 1.2) return;
+      ctx.fillStyle = css(lerp3(rangeNear, horizon, haze * 0.25));
+      ctx.beginPath(); ctx.moveTo(-20, H);
+      pts.forEach(pt => ctx.lineTo(pt.x, pt.y + off));
+      ctx.lineTo(W + 20, H); ctx.closePath(); ctx.fill();
+      const my = H * (0.5 + k * 0.1) + off;
+      const mist = ctx.createLinearGradient(0, my, 0, my + H * 0.12);
+      mist.addColorStop(0, css(horizon, 0)); mist.addColorStop(1, css(horizon, 0.22 - k * 0.04));
+      ctx.fillStyle = mist; ctx.fillRect(0, my, W, H * 0.12);
+    });
+    // Sea of cloud far below once he's high up
+    if (climbPx > H * 0.3) {
+      const a = Math.min(0.55, (climbPx - H * 0.3) / (H * 3));
+      const sea = ctx.createLinearGradient(0, H * 0.55, 0, H);
+      sea.addColorStop(0, css(horizon, 0)); sea.addColorStop(1, css(mixc('#c9b3d6', '#fff0e0', p), a));
+      ctx.fillStyle = sea; ctx.fillRect(0, H * 0.55, W, H * 0.45);
+    }
+
+    // ----- World (follows the camera) -----
+    ctx.save();
+    const shx = (Math.random() - 0.5) * power.shake, shy = (Math.random() - 0.5) * power.shake;
+    ctx.translate(-cam.x + shx, -cam.y + shy);
+    const view = { x0: cam.x - 60, x1: cam.x + W + 60, y0: cam.y - 60, y1: cam.y + H + 60 };
+
+    if (geomH < 0.999) drawGhost();
+    drawMountain(p, view);
+    drawMilestones(time, view);
+    drawSummit(time);
+    drawGround(p);
+    drawAura(time);
+    drawBoulder(p);
+    drawClimberRetro(time, p);
+    drawFire(time);
+    drawPowerFx(time);
+
+    embers.forEach(e => {
+      ctx.fillStyle = `rgba(255,${Math.round(120 + 100 * e.life)},60,${e.life})`;
+      ctx.beginPath(); ctx.arc(e.x, e.y, e.r * e.life + 0.5, 0, Math.PI * 2); ctx.fill();
+    });
+    dust.forEach(d => { ctx.fillStyle = `rgba(226,210,236,${d.life * 0.55})`; ctx.beginPath(); ctx.arc(d.x, d.y, d.r * (2 - d.life), 0, Math.PI * 2); ctx.fill(); });
+    ctx.restore();
+
+    // Vignette + grain
+    const v = ctx.createRadialGradient(W * 0.5, H * 0.45, Math.min(W, H) * 0.35, W * 0.5, H * 0.5, Math.max(W, H) * 0.8);
+    v.addColorStop(0, 'rgba(8,5,20,0)'); v.addColorStop(1, 'rgba(8,5,20,0.5)');
+    ctx.fillStyle = v; ctx.fillRect(0, 0, W, H);
+    retroize();
+    drawOverlay();
+  }
+
+
+  // ---------- Retro renderer: low-res frame, snapped to a 32-colour palette with ordered dithering ----------
+  const PAL = ['#181425','#262b44','#3a4466','#5a6988','#8b9bb4','#c0cbdc','#ffffff','#68386c','#b55088','#f6757a',
+    '#e8b796','#c28569','#ead4aa','#e4a672','#b86f50','#733e39','#3e2731','#a22633','#e43b44','#be4a2f','#d77643',
+    '#f77622','#feae34','#fee761','#63c74d','#3e8948','#265c42','#193c3e','#124e89','#0099db','#2ce8f5','#ff0044'];
+  const PALF = new Uint8Array(PAL.length * 3);
+  PAL.forEach((h, k) => { PALF[k * 3] = parseInt(h.substr(1, 2), 16); PALF[k * 3 + 1] = parseInt(h.substr(3, 2), 16); PALF[k * 3 + 2] = parseInt(h.substr(5, 2), 16); });
+  const PAL_LUT = new Uint8Array(32768);
+  for (let i = 0; i < 32768; i++) {
+    const r = ((i >> 10) & 31) * 8 + 4, g = ((i >> 5) & 31) * 8 + 4, b = (i & 31) * 8 + 4;
+    let best = 0, bd = Infinity;
+    for (let k = 0; k < PAL.length; k++) {
+      const dr = r - PALF[k * 3], dg = g - PALF[k * 3 + 1], db = b - PALF[k * 3 + 2];
+      const d = 2 * dr * dr + 4 * dg * dg + 3 * db * db;
+      if (d < bd) { bd = d; best = k; }
+    }
+    PAL_LUT[i] = best;
+  }
+  const BAYER = Int16Array.from([0, 8, 2, 10, 12, 4, 14, 6, 3, 11, 1, 9, 15, 7, 13, 5], v => Math.round((v / 16 - 0.47) * 10));
+  function retroize() {
+    if (!lowW || !lowH) return;
+    const img = ctx.getImageData(0, 0, lowW, lowH), d = img.data;
+    for (let y = 0; y < lowH; y++) {
+      const row = (y & 3) * 4;
+      for (let x = 0; x < lowW; x++) {
+        const o = (y * lowW + x) * 4, t = BAYER[row + (x & 3)];
+        let r = d[o] + t, g = d[o + 1] + t, b = d[o + 2] + t;
+        r = r < 0 ? 0 : r > 255 ? 255 : r; g = g < 0 ? 0 : g > 255 ? 255 : g; b = b < 0 ? 0 : b > 255 ? 255 : b;
+        const k = PAL_LUT[((r >> 3) << 10) | ((g >> 3) << 5) | (b >> 3)] * 3;
+        d[o] = PALF[k]; d[o + 1] = PALF[k + 1]; d[o + 2] = PALF[k + 2]; d[o + 3] = 255;
+      }
+    }
+    ctx.putImageData(img, 0, 0);
+  }
+  // Crisp pixel-font text drawn over the low-res scene
+  function drawOverlay() {
+    fx.clearRect(0, 0, W, H);
+    fx.save(); fx.translate(-cam.x, -cam.y);
+    drawLabels();
+    fx.textAlign = 'center';
+    floaters.forEach(fl => {
+      const size = fl.size ? Math.round(fl.size * 0.62) : 10;
+      fx.font = `${size}px "Press Start 2P", ui-monospace, monospace`;
+      fx.globalAlpha = Math.min(1, fl.life * 1.5);
+      const X = Math.round(fl.screen ? fl.x + cam.x : fl.x), Y = Math.round(fl.screen ? fl.y + cam.y : fl.y);
+      fx.fillStyle = '#181425'; fx.fillText(fl.text, X + 2, Y + 2);
+      fx.fillStyle = fl.color; fx.fillText(fl.text, X, Y);
+    });
+    fx.globalAlpha = 1; fx.restore();
+  }
+
+  // ---------- Retro hero: the same skeleton and gait, rasterised as a pixel sprite with a dark outline ----------
+  function drawClimberRetro(time, p) {
+    if (!pose.feet || !pxs) return;
+    const c = boulderCenter();
+    const lean = pose.lean + Math.sin(time / 650) * (moving ? 0 : 0.015);
+    const fr = bodyFrame(pose.sF, lean, c);
+    const { bx, by } = fr;
+    const px = -by, py = bx;
+    const ht = power.heaveT;
+    const crouch = ht < 0 ? 0 : ht < 0.32 ? U * 0.18 * (ht / 0.32) : U * 0.18 * Math.max(0, 1 - (ht - 0.32) / 0.2);
+    let hip = { x: fr.hip.x + bx * pose.pulse * U * 0.05, y: fr.hip.y + crouch - pose.pulse * U * 0.03 - power.superLevel * U * 0.05 };
+    let sh = { x: hip.x + bx * TORSO(), y: hip.y + by * TORSO() };
+    const THIGH = U * 0.62, SHIN = U * 0.6;
+    const feet = pose.feet.map(f => { const q = frameAt(f.u * L); return { x: q.x + q.nx * U * 0.1, y: q.y + q.ny * U * 0.1 - f.lift, u: f.u }; });
+    let legs = feet.map(ft => { const s = ik(hip, ft, THIGH, SHIN, -1); return { knee: s.joint, ft: s.end }; });
+    let back = pose.feet[0].u <= pose.feet[1].u ? 0 : 1;
+    pose.feetWorld = legs.map(l => l.ft);
+    pose.core = { x: (hip.x + sh.x) / 2, y: (hip.y + sh.y) / 2 };
+    let armB = ik(sh, palmPoint(c, PALM_B), ARM() * 0.52, ARM() * 0.5, 1);
+    let armF = ik(sh, palmPoint(c, PALM_F), ARM() * 0.52, ARM() * 0.5, 1);
+    const toC = Math.atan2(c.y - sh.y, c.x - sh.x);
+    let hdx = bx * 0.55 + Math.cos(toC) * 0.45, hdy = by * 0.55 + Math.sin(toC) * 0.45; const hm = Math.hypot(hdx, hdy) || 1; hdx /= hm; hdy /= hm;
+    let head = { x: sh.x + hdx * U * 0.34 + px * U * 0.06, y: sh.y + hdy * U * 0.34 + py * U * 0.06 };
+    if (flight.active) {
+      // Hanging under the boulder, arms locked overhead, legs trailing behind, jets firing
+      const flap = Math.sin(time / 80);
+      sh = { x: c.x - R * 0.2, y: c.y + R * 0.95 + ARM() * 0.8 };
+      armB = ik(sh, { x: c.x - R * 0.35, y: c.y + R * 0.9 }, ARM() * 0.52, ARM() * 0.5, 1);
+      armF = ik(sh, { x: c.x + R * 0.05, y: c.y + R * 0.97 }, ARM() * 0.52, ARM() * 0.5, 1);
+      hip = { x: sh.x - U * 0.4, y: sh.y + TORSO() * 0.92 };
+      const kn1 = { x: hip.x - U * 0.5, y: hip.y + U * 0.35 + flap * U * 0.06 }, kn2 = { x: hip.x - U * 0.3, y: hip.y + U * 0.5 - flap * U * 0.06 };
+      legs = [{ knee: kn1, ft: { x: kn1.x - U * 0.55, y: kn1.y + U * 0.2 } }, { knee: kn2, ft: { x: kn2.x - U * 0.5, y: kn2.y + U * 0.35 } }];
+      back = 0;
+      hdx = 0.15; hdy = -0.99;
+      head = { x: sh.x + U * 0.04, y: sh.y - U * 0.3 };
+      pose.feetWorld = legs.map(l => l.ft);
+      pose.core = { x: (hip.x + sh.x) / 2, y: (hip.y + sh.y) / 2 };
+    }
+
+    const gold = power.superLevel > 0.3 && Math.floor(time / 90) % 3 !== 0;
+    const COL = gold
+      ? { dark: '#b86f50', skin: '#feae34', light: '#fee761', hair: '#733e39', cloth: '#be4a2f', foot: '#733e39' }
+      : { dark: '#733e39', skin: '#b86f50', light: '#e4a672', hair: '#3e2731', cloth: '#3e2731', foot: '#181425' };
+
+    // Rasterise onto the low-res grid
+    const cells = new Map();
+    const gx = v => Math.round((v - cam.x) / pxs), gy = v => Math.round((v - cam.y) / pxs);
+    const put = (x, y, col) => cells.set(x + ',' + y, [x, y, col]);
+    const blob = (x, y, r, col) => { for (let j = -r; j <= r; j++) for (let i = -r; i <= r; i++) if (i * i + j * j <= r * r + r) put(x + i, y + j, col); };
+    const line = (a, b, w, col) => {
+      const x0 = (a.x - cam.x) / pxs, y0 = (a.y - cam.y) / pxs, x1 = (b.x - cam.x) / pxs, y1 = (b.y - cam.y) / pxs;
+      const n = Math.max(1, Math.ceil(Math.hypot(x1 - x0, y1 - y0) * 2));
+      for (let k = 0; k <= n; k++) {
+        const x = Math.round(x0 + (x1 - x0) * k / n), y = Math.round(y0 + (y1 - y0) * k / n);
+        if (w <= 1) put(x, y, col); else if (w === 2) { put(x, y, col); put(x + 1, y, col); put(x, y + 1, col); put(x + 1, y + 1, col); } else blob(x, y, 1, col);
+      }
+    };
+    const G = pt => ({ x: (pt.x - cam.x) / pxs, y: (pt.y - cam.y) / pxs });
+    const fillPoly = (pts, col) => {
+      const P = pts.map(G);
+      const x0 = Math.floor(Math.min(...P.map(q => q.x))), x1 = Math.ceil(Math.max(...P.map(q => q.x)));
+      const y0 = Math.floor(Math.min(...P.map(q => q.y))), y1 = Math.ceil(Math.max(...P.map(q => q.y)));
+      for (let y = y0; y <= y1; y++) for (let x = x0; x <= x1; x++) {
+        let inside = false;
+        for (let i = 0, j = P.length - 1; i < P.length; j = i++) {
+          const a = P[i], b = P[j];
+          if ((a.y > y) !== (b.y > y) && x < (b.x - a.x) * (y - a.y) / (b.y - a.y) + a.x) inside = !inside;
+        }
+        if (inside) put(x, y, col);
+      }
+    };
+    const thick = (a, b, w, col) => line(a, b, w, col);
+    const off = (pt, k1, k2) => ({ x: pt.x + px * k1 + bx * k2, y: pt.y + py * k1 + by * k2 });
+    // far leg (shadow), heel to toe
+    thick(hip, legs[back].knee, 3, COL.dark); thick(legs[back].knee, legs[back].ft, 2, COL.dark);
+    line(legs[back].ft, { x: legs[back].ft.x + U * 0.22, y: legs[back].ft.y + U * 0.04 }, 2, COL.foot);
+    // far arm (shadow)
+    thick(sh, armB.joint, 2, COL.dark); thick(armB.joint, armB.end, 2, COL.dark);
+    // torso: broad back and shoulders tapering to the waist
+    const SHW = U * 0.36, WAW = U * 0.16;
+    fillPoly([off(sh, -SHW, 0), off(sh, SHW, 0), off(hip, WAW, 0), off(hip, -WAW * 1.1, 0)], COL.skin);
+    line(off(sh, SHW * 0.7, -U * 0.05), off(hip, WAW * 0.6, U * 0.1), 1, COL.light);      // lit chest edge
+    line(off(sh, -SHW * 0.75, -U * 0.08), off(hip, -WAW * 0.9, U * 0.12), 1, COL.dark);  // shaded back
+    // loincloth
+    fillPoly([off(hip, -WAW * 1.3, U * 0.12), off(hip, WAW * 1.25, U * 0.12), off(hip, WAW * 1.1, -U * 0.16), off(hip, -WAW * 1.4, -U * 0.14)], COL.cloth);
+    // near leg
+    thick(hip, legs[1 - back].knee, 3, COL.skin); thick(legs[1 - back].knee, legs[1 - back].ft, 2, COL.skin);
+    line(off(hip, U * 0.04, 0), off(legs[1 - back].knee, U * 0.04, 0), 1, COL.light);
+    line(legs[1 - back].ft, { x: legs[1 - back].ft.x + U * 0.22, y: legs[1 - back].ft.y + U * 0.04 }, 2, COL.foot);
+    // near arm
+    thick(sh, armF.joint, 2, COL.skin); thick(armF.joint, armF.end, 2, COL.light);
+    put(Math.round(G(armF.end).x), Math.round(G(armF.end).y) - 1, COL.light);
+    // head between the raised arms, hair on the back
+    const hx = gx(head.x), hy = gy(head.y), hr = Math.max(2, Math.round(U * 0.2 / pxs));
+    blob(hx, hy, hr, COL.skin);
+    put(hx + Math.round(px * hr * 0.6), hy + Math.round(py * hr * 0.6), COL.light);
+    for (let a = -1.9; a <= 1.0; a += 0.35) put(hx + Math.round(Math.cos(Math.atan2(hdy, hdx) + Math.PI + a) * hr), hy + Math.round(Math.sin(Math.atan2(hdy, hdx) + Math.PI + a) * hr), COL.hair);
+
+    // Outline: every empty neighbour of a filled pixel
+    const outline = [];
+    cells.forEach(([x, y]) => [[1, 0], [-1, 0], [0, 1], [0, -1]].forEach(([i, j]) => { const k = (x + i) + ',' + (y + j); if (!cells.has(k)) outline.push([x + i, y + j]); }));
+    const wx = x => cam.x + x * pxs, wy = y => cam.y + y * pxs;
+    ctx.fillStyle = '#181425';
+    outline.forEach(([x, y]) => ctx.fillRect(wx(x), wy(y), pxs, pxs));
+    cells.forEach(([x, y, col]) => { ctx.fillStyle = col; ctx.fillRect(wx(x), wy(y), pxs, pxs); });
+
+    if (moving && !reduceMotion && power.superLevel < 0.5 && Math.floor(time / 420) % 2) {
+      ctx.fillStyle = '#2ce8f5'; ctx.fillRect(wx(hx - hr - 1), wy(hy + 1), pxs, pxs);
+    }
+  }
+
+  function drawAura(time) {
+    const sl = power.superLevel;
+    if (sl < 0.02 || !pose.core) return;
+    const c = pose.core, r = U * (1.8 + 0.15 * Math.sin(time / 120));
+    const g = ctx.createRadialGradient(c.x, c.y, U * 0.2, c.x, c.y, r);
+    g.addColorStop(0, `rgba(255,236,160,${0.55 * sl})`); g.addColorStop(0.5, `rgba(255,190,80,${0.25 * sl})`); g.addColorStop(1, 'rgba(255,170,60,0)');
+    ctx.fillStyle = g; ctx.fillRect(c.x - r, c.y - r, r * 2, r * 2);
+    // Golden glow on the boulder too
+    const b = boulderCenter(), br = R * 1.7;
+    const bg = ctx.createRadialGradient(b.x, b.y, R * 0.8, b.x, b.y, br);
+    bg.addColorStop(0, `rgba(255,214,130,${0.35 * sl})`); bg.addColorStop(1, 'rgba(255,214,130,0)');
+    ctx.fillStyle = bg; ctx.fillRect(b.x - br, b.y - br, br * 2, br * 2);
+  }
+  function drawPowerFx(time) {
+    ctx.save();
+    trail.forEach(t => { ctx.globalAlpha = Math.min(1, t.life * 1.4); ctx.fillStyle = t.c; const s = (pxs || 3) * (t.life > 0.5 ? 2 : 1); ctx.fillRect(t.x, t.y, s, s); });
+    ctx.globalAlpha = 1;
+    // Shockwave rings from a heave
+    rings.forEach(r => {
+      ctx.strokeStyle = `rgba(255,${r.big ? 236 : 214},${r.big ? 170 : 140},${Math.max(0, r.life) * 0.8})`;
+      ctx.lineWidth = (r.big ? 4 : 3) * r.life;
+      ctx.beginPath(); ctx.arc(r.x, r.y, r.r, 0, Math.PI * 2); ctx.stroke();
+    });
+    const sl = power.superLevel;
+    if (sl > 0.02 && pose.core) {
+      ctx.globalCompositeOperation = 'lighter';
+      // Rising sparkles
+      sparks.forEach(sp => {
+        ctx.fillStyle = `rgba(255,230,150,${sp.life * sl})`;
+        ctx.beginPath(); ctx.arc(sp.x, sp.y, sp.r, 0, Math.PI * 2); ctx.fill();
+      });
+      // Crackling lightning around him
+      if (!reduceMotion && Math.random() < 0.45 * sl) {
+        for (let k = 0; k < 2; k++) {
+          const a = Math.random() * Math.PI * 2, len = U * (0.9 + Math.random() * 0.8);
+          let x = pose.core.x + Math.cos(a) * U * 0.3, y = pose.core.y + Math.sin(a) * U * 0.3;
+          ctx.strokeStyle = `rgba(255,246,210,${0.9 * sl})`; ctx.lineWidth = 1.6;
+          ctx.beginPath(); ctx.moveTo(x, y);
+          for (let i = 1; i <= 5; i++) {
+            x += Math.cos(a) * len / 5 + (Math.random() - 0.5) * U * 0.35;
+            y += Math.sin(a) * len / 5 + (Math.random() - 0.5) * U * 0.35;
+            ctx.lineTo(x, y);
+          }
+          ctx.stroke();
+        }
+      }
+      // Speed streaks while he powers up the slope
+      if (moving === 1) {
+        const f = frameAt(boulderS());
+        ctx.strokeStyle = `rgba(255,240,200,${0.35 * sl})`; ctx.lineWidth = 2;
+        for (let i = 0; i < 6; i++) {
+          const off = ((time / 4 + i * 37) % 120) / 120;
+          const back = U * (2.5 + off * 3), up = R * (0.3 + (i % 3) * 0.7);
+          const x0 = f.x - f.tx * back + f.nx * up, y0 = f.y - f.ty * back + f.ny * up;
+          ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x0 - f.tx * U * 1.2, y0 - f.ty * U * 1.2); ctx.stroke();
+        }
+      }
+    }
+    ctx.restore();
+  }
+
+  function drawFire(time) {
+    if (fireLevel < 0.02 && !flames.length) return;
+    ctx.save();
+    // Glow pooled around his feet
+    if (pose.feetWorld && fireLevel > 0.02) pose.feetWorld.forEach((ft, i) => {
+      const r = U * (0.7 + 0.12 * Math.sin(time / 70 + i * 2));
+      const g = ctx.createRadialGradient(ft.x, ft.y - U * 0.15, 0, ft.x, ft.y - U * 0.15, r);
+      g.addColorStop(0, `rgba(255,170,70,${0.55 * fireLevel})`); g.addColorStop(1, 'rgba(255,90,30,0)');
+      ctx.fillStyle = g; ctx.fillRect(ft.x - r, ft.y - U * 0.15 - r, r * 2, r * 2);
+    });
+    // Flame tongues: teardrops that stretch upward, red at the tips, yellow at the root
+    const tongue = (x, y, w, hgt) => {
+      ctx.beginPath();
+      ctx.moveTo(x, y - hgt);
+      ctx.bezierCurveTo(x + w * 0.9, y - hgt * 0.45, x + w, y, x, y + w * 0.35);
+      ctx.bezierCurveTo(x - w, y, x - w * 0.9, y - hgt * 0.45, x, y - hgt);
+    };
+    flames.forEach(f => {
+      const l = f.life, w = f.r * (0.55 + 0.45 * l), hgt = f.r * (1.4 + 1.6 * l);
+      const col = l > 0.7 ? [255, 196, 70] : l > 0.4 ? [250, 120, 35] : [200, 50, 25];
+      ctx.fillStyle = `rgba(${col[0]},${col[1]},${col[2]},${Math.min(1, l * 1.3) * 0.85})`;
+      tongue(f.x, f.y, w, hgt); ctx.fill();
+    });
+    ctx.globalCompositeOperation = 'lighter';
+    flames.forEach(f => {
+      if (f.life < 0.6) return;
+      const w = f.r * 0.35, hgt = f.r * 1.1;
+      ctx.fillStyle = `rgba(255,236,170,${(f.life - 0.6) * 1.2})`;
+      tongue(f.x, f.y, w, hgt); ctx.fill();
+    });
+    ctx.restore();
+  }
+
+  const FAR = () => W * 40;
+  function mountainOutline() {
+    const far = FAR();
+    ctx.beginPath(); ctx.moveTo(base.x - far, base.y + far); ctx.lineTo(base.x - far, base.y); ctx.lineTo(base.x, base.y);
+    for (let i = 0; i <= 400; i++) { const q = pathOn(i / 400, fullPeak); ctx.lineTo(q.x, q.y); }
+    ctx.lineTo(fullPeak.x + far, fullPeak.y + far * SLOPE_R); ctx.lineTo(fullPeak.x + far, base.y + far); ctx.closePath();
+  }
+  // The ridge from t0..t1 in full-size space
+  function ridgeStroke(t0, t1, dy = 0, dx = 0, n = 200) {
+    ctx.beginPath();
+    for (let i = 0; i <= n; i++) {
+      const t = t0 + (t1 - t0) * i / n, q = pathOn(t, fullPeak);
+      i ? ctx.lineTo(q.x + dx, q.y + dy) : ctx.moveTo(q.x + dx, q.y + dy);
+    }
+  }
+
+  function drawGhost() {
+    // Dashed outline of the original (pre-burn) mountain
+    ctx.save();
+    ctx.setLineDash([5, 7]); ctx.strokeStyle = 'rgba(255,248,236,0.3)'; ctx.lineWidth = 1.5;
+    ridgeStroke(0, 1, 0, 0, 300);
+    ctx.lineTo(fullPeak.x + W, fullPeak.y + W * SLOPE_R);
+    ctx.stroke(); ctx.restore();
+  }
+
+  function drawMountain(p, view) {
+    const h = geomH;
+    // Visible slice of the trail, converted into full-size coordinates
+    const toFull = pt => ({ x: base.x + (pt.x - base.x) / h, y: base.y + (pt.y - base.y) / h });
+    const v0 = toFull({ x: view.x0, y: view.y1 }), v1 = toFull({ x: view.x1, y: view.y0 });
+    const span = fullPeak.x - base.x;
+    const tA = Math.max(0, (v0.x - base.x) / span - 0.05), tB = Math.min(1, (v1.x - base.x) / span + 0.05);
+
+    ctx.save();
+    ctx.translate(base.x, base.y); ctx.scale(h, h); ctx.translate(-base.x, -base.y);
+
+    // Massifs rising behind the trail, snowier the higher up the mountain
+    [[0.34, 0.75, '#68386c', '#b55088'], [0.2, 0.45, '#3e2731', '#68386c']].forEach(([hgt, haze, c0, c1], layer) => {
+      const n = 160, tops = [];
+      ctx.beginPath();
+      for (let i = 0; i <= n; i++) {
+        const t = tA + (tB - tA) * i / n, q = pathOn(t, fullPeak);
+        const tt = t * GAP_SCALE, ridge = 0.55 * Math.abs(Math.sin(tt * (37 + layer * 11))) + 0.3 * Math.abs(Math.sin(tt * (113 + layer * 29) + 1.3)) + 0.15 * Math.abs(Math.sin(tt * 331 + layer));
+        const y = q.y - H * hgt * (0.35 + ridge) * (1 - t * 0.6);
+        tops.push([q.x + H * 0.08 * (layer + 1), y]);
+        i ? ctx.lineTo(q.x + H * 0.08 * (layer + 1), y) : ctx.moveTo(q.x + H * 0.08 * (layer + 1), y);
+      }
+      for (let i = n; i >= 0; i--) { const q = pathOn(tA + (tB - tA) * i / n, fullPeak); ctx.lineTo(q.x, q.y + 4); }
+      ctx.closePath();
+      const tm = (tA + tB) / 2;
+      const col = lerp3(lerp3(mixc(c0, c1, p), mixc('#f6757a', '#feae34', p), haze * 0.12), rgb('#e6e2f2'), Math.max(0, (tm - 0.55) * 1.2) * (0.6 - layer * 0.2));
+      ctx.fillStyle = css(col); ctx.fill();
+      ctx.strokeStyle = css(lerp3(col, rgb('#f6757a'), 0.55)); ctx.lineWidth = 2.5 / h;
+      ctx.beginPath(); tops.forEach(([x, y], i) => i ? ctx.lineTo(x, y) : ctx.moveTo(x, y)); ctx.stroke();
+    });
+
+    // Body: lighter rock up high, deep shadow down low, but always lit near the trail
+    const mg = ctx.createLinearGradient(0, v1.y, 0, v0.y + H);
+    mg.addColorStop(0, css(mixc('#3a4466', '#5a6988', p)));
+    mg.addColorStop(1, css(mixc('#181425', '#262b44', p)));
+    mountainOutline(); ctx.fillStyle = mg; ctx.fill();
+    ctx.save(); mountainOutline(); ctx.clip();
+
+    // Band of light just under the ridge
+    ctx.lineJoin = 'round';
+    ctx.strokeStyle = css(mixc('#5a6988', '#8b9bb4', p), 0.25); ctx.lineWidth = (H * 0.09) / h;
+    ridgeStroke(tA, tB, H * 0.045, 0); ctx.stroke();
+
+    // Rock grain
+    if (rockTex) {
+      ctx.globalAlpha = 0.3; ctx.fillStyle = rockTex;
+      ctx.fillRect(v0.x - 100, v1.y - 100, v1.x - v0.x + 200, v0.y - v1.y + 200);
+      ctx.globalAlpha = 1;
+    }
+
+    // Long strata following the slope
+    ctx.lineWidth = 1.2 / h;
+    for (let k = 1; k <= 12; k++) {
+      ctx.strokeStyle = k % 2 ? 'rgba(10,6,30,0.13)' : 'rgba(255,240,230,0.06)';
+      ctx.beginPath();
+      const n = 80;
+      for (let i = 0; i <= n; i++) {
+        const t = tA + (tB - tA) * i / n, q = pathOn(t, fullPeak);
+        const yy = q.y + k * H * 0.055 + Math.sin(t * GAP_SCALE * 300 + k) * 3;
+        i ? ctx.lineTo(q.x + k * 4, yy) : ctx.moveTo(q.x + k * 4, yy);
+      }
+      ctx.stroke();
+    }
+
+    // Ledges: a lit lip with a shadow cast underneath
+    const dirX = fullPeak.x - base.x, dirY = (fullPeak.y - base.y) * 0.85, dm = Math.hypot(dirX, dirY);
+    const ux = dirX / dm, uy = dirY / dm;
+    ledges.forEach(l => {
+      if (l.t < tA - 0.02 || l.t > tB + 0.02) return;
+      const q = pathOn(l.t, fullPeak), x0 = q.x, y0 = q.y + l.depth;
+      const x1 = x0 + ux * l.len, y1 = y0 + uy * l.len, mx = (x0 + x1) / 2, my = (y0 + y1) / 2 + l.bow;
+      ctx.strokeStyle = 'rgba(10,6,30,0.28)'; ctx.lineWidth = 5 / h;
+      ctx.beginPath(); ctx.moveTo(x0, y0 + 3); ctx.quadraticCurveTo(mx, my + 3, x1, y1 + 3); ctx.stroke();
+      ctx.strokeStyle = `rgba(255,236,220,${0.1 + 0.12 * p})`; ctx.lineWidth = 1.4 / h;
+      ctx.beginPath(); ctx.moveTo(x0, y0); ctx.quadraticCurveTo(mx, my, x1, y1); ctx.stroke();
+    });
+
+    // Boulders bedded into the face
+    faceRocks.forEach(fr => {
+      if (fr.t < tA - 0.02 || fr.t > tB + 0.02) return;
+      const q = pathOn(fr.t, fullPeak);
+      drawRock(q.x, q.y + fr.depth, fr.s, Math.atan2(uy, ux) + fr.rot, fr.pts, p, true);
+    });
+
+    // Shadowed far face beyond the summit
+    ctx.fillStyle = 'rgba(10,6,30,0.32)';
+    ctx.beginPath(); ctx.moveTo(fullPeak.x, fullPeak.y); ctx.lineTo(fullPeak.x + FAR(), fullPeak.y + FAR() * SLOPE_R);
+    ctx.lineTo(fullPeak.x + FAR(), base.y + FAR()); ctx.lineTo(fullPeak.x + W * 0.05, base.y + FAR()); ctx.closePath(); ctx.fill();
+
+    // Snowline: the top of the mountain
+    const A = pathOn(0.9, fullPeak);
+    const Rx = fullPeak.x + (A.y - fullPeak.y) / SLOPE_R;
+    const jag = H * 0.03;
+    ctx.fillStyle = css(mixc('#d9dcf0', '#fff1e2', p), 0.96);
+    ctx.beginPath(); ctx.moveTo(A.x, A.y);
+    for (let i = 0; i <= 30; i++) { const q = pathOn(0.9 + 0.1 * i / 30, fullPeak); ctx.lineTo(q.x, q.y); }
+    ctx.lineTo(Rx, A.y);
+    for (let i = 1; i <= 9; i++) ctx.lineTo(Rx + (A.x - Rx) * (i / 10), A.y + (i % 2 ? jag : -jag * 0.3));
+    ctx.closePath(); ctx.fill();
+    ctx.fillStyle = css(mixc('#8f93b8', '#c9b7cf', p), 0.9);
+    ctx.beginPath(); ctx.moveTo(fullPeak.x, fullPeak.y); ctx.lineTo(Rx, A.y);
+    ctx.lineTo(Rx - (Rx - fullPeak.x) * 0.4, A.y + jag); ctx.lineTo(fullPeak.x + 4, A.y - jag * 0.2); ctx.closePath(); ctx.fill();
+
+    // Worn, dusty trail surface just under the edge
+    ctx.strokeStyle = `rgba(255,232,205,${0.08 + 0.1 * p})`; ctx.lineWidth = 9 / h;
+    ridgeStroke(tA, tB, 4.5 / h); ctx.stroke();
+    ctx.strokeStyle = `rgba(255,232,205,${0.18 + 0.2 * p})`; ctx.lineWidth = 2.5 / h;
+    ridgeStroke(tA, tB); ctx.stroke();
+    ctx.restore();
+
+    ctx.strokeStyle = '#181425'; ctx.lineWidth = 5 / h;
+    ridgeStroke(tA, tB, -2.5 / h); ctx.stroke();
+    ctx.strokeStyle = css(mixc('#8b9bb4', '#c0cbdc', p)); ctx.lineWidth = 2.5 / h;
+    ridgeStroke(tA, tB, 1.5 / h); ctx.stroke();
+
+    // Rocks sitting on the trail edge (clusters), and pebbles lying on the trail
+    outcrops.forEach(o => {
+      if (o.t < tA || o.t > tB) return;
+      for (let j = 0; j < o.n; j++) {
+        const q = frameOnFull(o.t + j * 0.0012);
+        drawRock(q.x, q.y, o.s * (1 - j * 0.3), q.a, o.pts, p, false);
+      }
+    });
+    pebbles.forEach(pb => {
+      if (pb.t < tA || pb.t > tB) return;
+      const q = frameOnFull(pb.t);
+      drawRock(q.x + (pb.down ? -q.a * 0 : 0), q.y + pb.down, pb.s, q.a, pb.pts, p, pb.down > 0);
+    });
+    ctx.restore();
+  }
+
+  // Point and slope angle on the full-size trail
+  function frameOnFull(t) {
+    const a = pathOn(Math.max(0, t - 0.0005), fullPeak), b = pathOn(Math.min(1, t + 0.0005), fullPeak), q = pathOn(t, fullPeak);
+    return { x: q.x, y: q.y, a: Math.atan2(b.y - a.y, b.x - a.x) };
+  }
+  // Irregular rock outline with a flat-ish base at y = 0, rising to y = -1
+  function rockPts(r) {
+    const n = 6 + Math.floor(r() * 3), pts = [];
+    for (let i = 0; i <= n; i++) {
+      const a = Math.PI + (i / n) * Math.PI;                 // upper half only
+      const rad = 0.75 + r() * 0.35;
+      pts.push([Math.cos(a) * rad * (1.1 + r() * 0.3), Math.sin(a) * rad * (0.75 + r() * 0.35)]);
+    }
+    return pts;
+  }
+  // A rock resting on a surface: contact shadow, body, sunlit top facet
+  function drawRock(x, y, s, ang, pts, p, bedded) {
+    ctx.save(); ctx.translate(x, y); ctx.rotate(ang);
+    ctx.fillStyle = 'rgba(8,5,20,0.38)';
+    ctx.beginPath(); ctx.ellipse(s * 0.15, s * 0.08, s * 1.25, s * 0.22, 0, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = css(bedded ? mixc('#262b44', '#3a4466', p) : mixc('#3a4466', '#5a6988', p));
+    ctx.beginPath(); ctx.moveTo(pts[0][0] * s, 0);
+    pts.forEach(([px, py]) => ctx.lineTo(px * s, py * s));
+    ctx.lineTo(pts[pts.length - 1][0] * s, 0); ctx.closePath(); ctx.fill();
+    // lit facet on the sun side
+    ctx.fillStyle = css(mixc('#8b9bb4', '#c0cbdc', p), bedded ? 0.45 : 0.7);
+    ctx.beginPath(); ctx.moveTo(0, -s * 0.15);
+    pts.slice(Math.floor(pts.length / 2)).forEach(([px, py]) => ctx.lineTo(px * s * 0.92, py * s * 0.92));
+    ctx.lineTo(s * 0.35, -s * 0.1); ctx.closePath(); ctx.fill();
+    ctx.restore();
+  }
+
+  let milestoneLabels = [];
+  function drawMilestones(time, view) {
+    milestoneLabels = [];
+    const next = nextMilestone(mc);
+    MILESTONES.forEach((m, i) => {
+      const q = frameAt(milestoneFrac(i) * L);
+      if (q.x < view.x0 - 140 || q.x > view.x1 + 140 || q.y < view.y0 - 140 || q.y > view.y1 + 140) return;
+      const reached = ath >= m, isNext = m === next;
+      // Pixel stone marker post with a dark outline; a red pennant once passed
+      const o = pxs || 3, postH = R * 1.3, pw = Math.max(o * 3, R * 0.22);
+      ctx.save(); ctx.translate(q.x, q.y);
+      ctx.fillStyle = '#181425'; ctx.fillRect(-pw / 2 - o, -postH - o, pw + o * 2, postH + o);
+      ctx.fillStyle = reached ? '#feae34' : '#c0cbdc'; ctx.fillRect(-pw / 2, -postH, pw, postH);
+      ctx.fillStyle = reached ? '#b86f50' : '#8b9bb4'; ctx.fillRect(pw / 2 - o, -postH, o, postH);
+      ctx.fillStyle = reached ? '#fee761' : '#ffffff'; ctx.fillRect(-pw / 2, -postH, pw, o);
+      if (reached) {
+        const wave = Math.sin(time / 300 + i) * R * 0.06;
+        ctx.fillStyle = '#181425';
+        ctx.beginPath(); ctx.moveTo(pw / 2, -postH - o); ctx.lineTo(pw / 2 + R * 0.75 + o, -postH + R * 0.14 + wave); ctx.lineTo(pw / 2, -postH + R * 0.42 + o); ctx.closePath(); ctx.fill();
+        ctx.fillStyle = '#e43b44';
+        ctx.beginPath(); ctx.moveTo(pw / 2, -postH); ctx.lineTo(pw / 2 + R * 0.7, -postH + R * 0.14 + wave); ctx.lineTo(pw / 2, -postH + R * 0.38); ctx.closePath(); ctx.fill();
+      }
+      ctx.restore();
+      milestoneLabels.push({ x: q.x - q.nx * R * 1.2 + 8, y: q.y - q.ny * R * 1.2, text: usd(m), reached, isNext, align: 'left' });
+    });
+  }
+  // Crisp pixel-font plaques for the milestone and summit labels (drawn on the overlay)
+  function drawLabels() {
+    const blinkOn = Math.floor(performance.now() / 420) % 2 === 0;
+    fx.textBaseline = 'middle';
+    milestoneLabels.forEach(lb => {
+      const fs = Math.max(10, Math.min(14, Math.round(R * 0.2)));
+      fx.font = `${fs}px "Press Start 2P", ui-monospace, monospace`;
+      const tw = Math.ceil(fx.measureText(lb.text).width), padX = 7, h = fs + 12, w = tw + padX * 2;
+      const x = Math.round(lb.align === 'center' ? lb.x - w / 2 : lb.x), y = Math.round(lb.y - h / 2);
+      fx.fillStyle = '#181425'; fx.fillRect(x - 3, y - 3, w + 6, h + 6);
+      fx.fillStyle = lb.reached ? '#733e39' : '#262b44'; fx.fillRect(x, y, w, h);
+      if (lb.isNext) { fx.fillStyle = blinkOn ? '#fee761' : '#feae34'; fx.fillRect(x, y, w, 2); fx.fillRect(x, y + h - 2, w, 2); fx.fillRect(x, y, 2, h); fx.fillRect(x + w - 2, y, 2, h); }
+      fx.fillStyle = lb.reached ? '#feae34' : lb.isNext ? '#ffffff' : '#c0cbdc';
+      fx.textAlign = 'left'; fx.fillText(lb.text, x + padX, y + h / 2 + 1);
+    });
+    fx.textBaseline = 'alphabetic';
+  }
+
+  function drawSummit(time) {
+    const glow = ctx.createRadialGradient(peak.x, peak.y, 0, peak.x, peak.y, H * 0.18);
+    glow.addColorStop(0, `rgba(255,214,140,${0.3 + 0.1 * Math.sin(time / 900)})`); glow.addColorStop(1, 'rgba(255,214,140,0)');
+    ctx.fillStyle = glow; ctx.fillRect(peak.x - H * 0.18, peak.y - H * 0.18, H * 0.36, H * 0.36);
+    const poleH = Math.max(40, H * 0.09), wave = Math.sin(time / 260);
+    ctx.strokeStyle = '#efe6da'; ctx.lineWidth = 2; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(peak.x, peak.y); ctx.lineTo(peak.x, peak.y - poleH); ctx.stroke();
+    const fg = ctx.createLinearGradient(peak.x, 0, peak.x + 36, 0);
+    fg.addColorStop(0, '#f6c35e'); fg.addColorStop(1, '#e08a3c');
+    ctx.fillStyle = fg;
+    ctx.beginPath(); ctx.moveTo(peak.x, peak.y - poleH);
+    ctx.bezierCurveTo(peak.x + 12, peak.y - poleH - 3 + wave * 3, peak.x + 24, peak.y - poleH + 5 - wave * 3, peak.x + 36, peak.y - poleH + 9 + wave * 2);
+    ctx.bezierCurveTo(peak.x + 24, peak.y - poleH + 14 - wave * 2, peak.x + 12, peak.y - poleH + 20 + wave * 3, peak.x, peak.y - poleH + 20);
+    ctx.closePath(); ctx.fill();
+    milestoneLabels.push({ x: peak.x, y: peak.y - poleH - 22, text: usd(SUMMIT), reached: false, isNext: false, align: 'center' });
+  }
+
+  function drawGround(p) {
+    const gg = ctx.createLinearGradient(0, base.y, 0, base.y + H * 0.3);
+    gg.addColorStop(0, css(mixc('#1e1834', '#3b2c4f', p))); gg.addColorStop(1, '#0d0a1c');
+    ctx.fillStyle = gg;
+    ctx.beginPath(); ctx.moveTo(base.x - W * 2, base.y + 2);
+    ctx.lineTo(base.x - W * 0.05, base.y - 2);
+    ctx.quadraticCurveTo(base.x + W * 0.04, base.y + 2, base.x + W * 0.1, base.y + H * 0.06);
+    ctx.quadraticCurveTo(base.x + W * 0.3, base.y + H * 0.14, base.x + W * 0.45, base.y + H * 0.4);
+    ctx.lineTo(base.x - W * 2, base.y + H * 0.4); ctx.closePath(); ctx.fill();
+    ctx.strokeStyle = css(mixc('#2c2346', '#5a4566', p)); ctx.lineWidth = 1.5; ctx.lineCap = 'round';
+    tufts.forEach(t => {
+      const y = base.y + 4;
+      for (let k = -1; k <= 1; k++) {
+        ctx.beginPath(); ctx.moveTo(t.x + k * 2, y);
+        ctx.quadraticCurveTo(t.x + k * 3 + t.lean * 6, y - t.h * 0.6, t.x + k * 4 + t.lean * 10, y - t.h);
+        ctx.stroke();
+      }
+    });
+  }
+
+  function drawBoulder(p) {
+    const s = boulderS(), c = boulderCenter(), ang = s / R;
+    // contact shadow
+    const f = frameAt(s);
+    ctx.fillStyle = 'rgba(8,5,20,0.22)';
+    ctx.beginPath(); ctx.ellipse(f.x + 2, f.y + 1, R * 0.8, R * 0.12, Math.atan2(f.ty, f.tx), 0, Math.PI * 2); ctx.fill();
+    // body, lit from the sun (upper right)
+    const bg = ctx.createRadialGradient(c.x + R * 0.35, c.y - R * 0.4, R * 0.1, c.x, c.y, R * 1.05);
+    bg.addColorStop(0, '#d4cdd9'); bg.addColorStop(0.45, '#8d8499'); bg.addColorStop(1, '#3a3249');
+    ctx.fillStyle = bg; ctx.beginPath(); ctx.arc(c.x, c.y, R, 0, Math.PI * 2); ctx.fill();
+    ctx.save(); ctx.beginPath(); ctx.arc(c.x, c.y, R, 0, Math.PI * 2); ctx.clip();
+    speckles.forEach(k => {
+      const a = k.a + ang;
+      ctx.fillStyle = k.moss ? 'rgba(96,120,80,0.45)' : 'rgba(40,32,58,0.32)';
+      ctx.beginPath(); ctx.arc(c.x + Math.cos(a) * k.d * R, c.y + Math.sin(a) * k.d * R, k.rad * R, 0, Math.PI * 2); ctx.fill();
+    });
+    ctx.strokeStyle = 'rgba(30,24,46,0.55)'; ctx.lineWidth = 1.6; ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(c.x + Math.cos(ang) * R * 0.15, c.y + Math.sin(ang) * R * 0.15);
+    ctx.lineTo(c.x + Math.cos(ang + 0.45) * R * 0.55, c.y + Math.sin(ang + 0.45) * R * 0.55);
+    ctx.lineTo(c.x + Math.cos(ang + 0.25) * R * 1.0, c.y + Math.sin(ang + 0.25) * R * 1.0);
+    ctx.moveTo(c.x + Math.cos(ang + 0.45) * R * 0.55, c.y + Math.sin(ang + 0.45) * R * 0.55);
+    ctx.lineTo(c.x + Math.cos(ang + 0.9) * R * 0.75, c.y + Math.sin(ang + 0.9) * R * 0.75);
+    ctx.stroke();
+    // core shadow on the lower left
+    const cs = ctx.createLinearGradient(c.x + R * 0.5, c.y - R * 0.5, c.x - R, c.y + R);
+    cs.addColorStop(0.45, 'rgba(10,6,30,0)'); cs.addColorStop(1, 'rgba(10,6,30,0.45)');
+    ctx.fillStyle = cs; ctx.fillRect(c.x - R, c.y - R, R * 2, R * 2);
+    ctx.restore();
+    // warm rim light
+    ctx.strokeStyle = `rgba(255,206,150,${0.25 + 0.5 * p})`; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(c.x, c.y, R - 1, -Math.PI * 0.75, -Math.PI * 0.05); ctx.stroke();
+  }
+
+  // ---------- Loop ----------
+  let last = performance.now();
+  function loop(now) {
+    const dt = Math.min(0.05, (now - last) / 1000); last = now;
+    if (W && H) { update(dt); draw(now); }
+    requestAnimationFrame(loop);
+  }
+
+  // ---------- Start-up: ?mint=ADDRESS goes live, &clean=1 hides the controls, &rpc=URL sets the Solana RPC ----------
+  resize();
+  if (params.get('clean') === '1') document.body.classList.add('clean');
+  updateStats();
+  // Visitors to a coin's page don't see the test controls (add ?dev=1 to bring them back)
+  if ((COIN_MINT || params.get('mint')) && params.get('dev') !== '1') document.body.classList.add('hide-dev');
+  renderQuick(); renderWallet();
+  let startMint = params.get('mint') || COIN_MINT;
+  if (!startMint && !inPreview) { try { startMint = localStorage.getItem('boulder:lastMint'); } catch (e) {} }
+  if (startMint && !inPreview) { $('#mint').value = startMint; goLive(startMint); }
+  else startDemo();
+  requestAnimationFrame(loop);
+  window.addEventListener('beforeunload', save);
+})();
+</script>
+</body>
+</html>
