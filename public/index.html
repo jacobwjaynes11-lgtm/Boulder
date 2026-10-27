@@ -216,6 +216,28 @@
   .socials { display: flex; gap: 16px; flex-wrap: wrap; }
   .socials a { color: var(--ink); font-weight: 600; text-decoration: none; }
   .socials a:hover { text-decoration: underline; }
+  .hero-socials { margin-top: 14px; }
+  .hero-socials a, .site-footer .socials a {
+    display: inline-flex; align-items: center; padding: 7px 13px; border: 1px solid var(--line); border-radius: 999px;
+    background: var(--panel); font-size: 14px; text-decoration: none;
+  }
+  .hero-socials a:hover, .site-footer .socials a:hover { border-color: var(--accent); text-decoration: none; }
+  .share-wrap { position: relative; display: inline-block; }
+  .share-menu {
+    position: absolute; z-index: 40; top: calc(100% + 8px); left: 0; min-width: 230px; display: grid; gap: 2px; padding: 6px;
+    background: var(--panel); border: 1px solid var(--line); border-radius: 14px; box-shadow: 0 14px 34px rgba(10, 6, 24, .28);
+  }
+  .share-menu.floating { position: fixed; }
+  .share-menu[hidden] { display: none; }
+  .share-menu button { background: transparent; color: var(--ink); border: 0; text-align: left; font-weight: 500; padding: 10px 12px; border-radius: 10px; }
+  .share-menu button:hover { background: var(--bg); }
+  .share-menu button[hidden] { display: none; }
+  .moment {
+    position: absolute; left: 14px; bottom: 14px; z-index: 3; font-family: "Press Start 2P", ui-monospace, monospace; font-size: 9px; font-weight: 400;
+    padding: 9px 10px; border-radius: 4px; background: rgba(24, 20, 37, .85); color: #fee761; border: 2px solid #feae34; cursor: pointer;
+  }
+  .moment[hidden] { display: none; }
+
   .disclaimer { font-size: 13px; color: var(--muted); max-width: 80ch; margin: 0; }
   .site-footer .brand { font-size: 18px; }
   @media (max-width: 760px) { .site-footer .in { padding: 28px 16px 40px; } }
@@ -278,7 +300,18 @@
     <a class="btn buy-link" href="#buy" target="_blank" rel="noopener">Buy <span data-site="ticker">$BOULDER</span></a>
     <span class="ca-chip" data-ca-wrap hidden>CA <code data-ca></code><button class="ghost small" data-copy-ca>Copy</button></span>
     <span class="ca-chip" data-ca-soon>Contract address coming at launch</span>
+    <span class="share-wrap">
+      <button class="ghost" id="shareBtn" aria-haspopup="menu" aria-expanded="false">Share</button>
+      <div class="share-menu" id="shareMenu" role="menu" hidden>
+        <button role="menuitem" data-share="x">Post on X</button>
+        <button role="menuitem" data-share="telegram">Send on Telegram</button>
+        <button role="menuitem" data-share="native" hidden>Share to an app…</button>
+        <button role="menuitem" data-share="image">Save a picture of the climb</button>
+        <button role="menuitem" data-share="copy">Copy link</button>
+      </div>
+    </span>
   </div>
+  <div class="socials hero-socials" id="heroSocials" hidden></div>
 </div>
 
 <main id="play">
@@ -290,6 +323,7 @@
       <div class="sub" id="sub">Market cap. Next milestone $3K</div>
     </div>
     <div class="mode" id="mode"><i></i><span>Waiting</span></div>
+    <button class="moment" id="momentBtn" hidden>Share this moment</button>
     <div class="sound-ctl"><button class="snd" id="sfxBtn" aria-pressed="false">Sound: off</button><button class="snd" id="musicBtn" aria-pressed="false">Music: off</button></div>
   </section>
 
@@ -749,6 +783,8 @@
     flight.mode = kind === 'break' ? 'superman' : 'carry'; flight.smash = kind === 'break' ? 0.5 : 0; flight.smashed = false; flight.dropT = 0;
     power.heaveT = -1;
     if (flight.mode === 'superman') Sound.windup(); else Sound.launch(flight.dur);
+    if (kind === 'break') shareMoment(`A buy so big Sisyphus smashed through his boulder and flew ${SITE.ticker} to ${usd(destMc)}!`, 'BREAKTHROUGH!');
+    else if (kind === 'whale') shareMoment(`A whale just launched ${SITE.ticker} to ${usd(destMc)}. Sisyphus is flying!`, 'Whale!');
     const b = boulderCenter();
     floaters.push({ x: W * 0.5, y: H * 0.26, screen: true, life: 2.4, text: (kind === 'break' ? 'BREAKTHROUGH! ' : kind === 'whale' ? 'Whale! ' : 'Soaring! ') + 'Flying to ' + usd(destMc), color: '#fee761', size: 26 });
     rings.push({ x: b.x, y: b.y + R, r: R * 0.8, life: 1.2, big: true });
@@ -1226,6 +1262,10 @@
     x: '',                      // e.g. 'https://x.com/yourcoin'
     telegram: '',               // e.g. 'https://t.me/yourcoin'
     discord: '',                // e.g. 'https://discord.gg/yourcoin'
+    tiktok: '',                 // e.g. 'https://www.tiktok.com/@yourcoin'
+    instagram: '',              // e.g. 'https://instagram.com/yourcoin'
+    youtube: '',                // e.g. 'https://youtube.com/@yourcoin'
+    url: 'https://bouldr.fun',  // the link people share
     burnWallet: ''              // the creator wallet's PUBLIC address (never the private key)
   };
   if (SITE.burnWallet) {
@@ -1234,17 +1274,25 @@
   }
   document.querySelectorAll('[data-site]').forEach(el => { const v = SITE[el.dataset.site]; if (v) el.textContent = v; });
   document.title = SITE.name + ' (' + SITE.ticker + ') · Push the Boulder';
-  (() => {
-    const box = $('#socials');
-    [['X', SITE.x], ['Telegram', SITE.telegram], ['Discord', SITE.discord]].forEach(([label, url]) => {
-      if (!url) return;
-      const a = document.createElement('a'); a.href = url; a.target = '_blank'; a.rel = 'noopener'; a.textContent = label; box.append(a);
+  // Social links under the headline and in the footer; only the ones filled in above are shown
+  function renderSocials(coin) {
+    const links = [['X', SITE.x], ['Telegram', SITE.telegram], ['Discord', SITE.discord], ['TikTok', SITE.tiktok], ['Instagram', SITE.instagram], ['YouTube', SITE.youtube]];
+    if (coin) links.push(['DexScreener', 'https://dexscreener.com/solana/' + coin]);
+    ['#socials', '#heroSocials'].forEach(sel => {
+      const box = $(sel); if (!box) return;
+      box.textContent = '';
+      links.forEach(([label, url]) => {
+        if (!url) return;
+        const a = document.createElement('a'); a.href = url; a.target = '_blank'; a.rel = 'noopener'; a.textContent = label; box.append(a);
+      });
+      box.hidden = !box.children.length;
     });
-    if (!box.children.length) box.hidden = true;
-  })();
+  }
+  renderSocials(COIN_MINT);
   function updateSiteMint() {
     // Site-wide buy links and contract address follow the coin set in COIN_MINT (or ?mint=)
     const coin = mint || COIN_MINT;
+    renderSocials(coin);
     document.querySelectorAll('.buy-link').forEach(a => {
       if (coin) { a.href = 'https://pump.fun/coin/' + coin; a.target = '_blank'; }
       else { a.href = '#buy'; a.removeAttribute('target'); }
@@ -1258,6 +1306,78 @@
     try { await navigator.clipboard.writeText(coin); b.textContent = 'Copied'; setTimeout(() => b.textContent = 'Copy', 1500); } catch (e) {}
   });
 
+
+  // ---------- Sharing: post to X or Telegram, copy the link, or save a picture of the climb ----------
+  const shareState = { text: '', headline: '' };
+  const shareUrl = () => SITE.url || (location.origin + '/');
+  function defaultShareText() {
+    return mint && mc
+      ? `Sisyphus is pushing ${SITE.ticker} up the mountain at ${usd(mc)} market cap. Every buy pushes, every sell slides, every burn sets his feet on fire.`
+      : `Every buy pushes the boulder up the mountain. Every sell lets it slide. Come watch ${SITE.ticker}.`;
+  }
+  function openShare(text, headline, anchor) {
+    const menu = $('#shareMenu');
+    shareState.text = text || defaultShareText(); shareState.headline = headline || '';
+    menu.classList.toggle('floating', !!anchor);
+    if (anchor) {
+      const r = anchor.getBoundingClientRect();
+      menu.style.left = Math.max(8, Math.min(r.left, innerWidth - 246)) + 'px';
+      menu.style.top = Math.max(8, r.top - 8 - 240) + 'px';
+    } else { menu.style.left = ''; menu.style.top = ''; }
+    menu.hidden = false; $('#shareBtn').setAttribute('aria-expanded', 'true');
+  }
+  function closeShare() { $('#shareMenu').hidden = true; $('#shareBtn').setAttribute('aria-expanded', 'false'); }
+  $('#shareBtn').onclick = e => { e.stopPropagation(); $('#shareMenu').hidden ? openShare() : closeShare(); };
+  document.addEventListener('click', e => { if (!e.target.closest('.share-menu, #shareBtn, #momentBtn')) closeShare(); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeShare(); });
+  if (navigator.share) $('[data-share="native"]').hidden = false;
+
+  // A 1200x630 picture of the current moment, sized for X and Telegram previews
+  function makeShareImage() {
+    const IW = 1200, IH = 630, out = document.createElement('canvas'); out.width = IW; out.height = IH;
+    const g = out.getContext('2d'); g.imageSmoothingEnabled = false;
+    const s = Math.max(IW / canvas.width, IH / canvas.height), dw = canvas.width * s, dh = canvas.height * s;
+    g.drawImage(canvas, (IW - dw) / 2, (IH - dh) / 2, dw, dh);
+    g.drawImage(fxCanvas, (IW - dw) / 2, (IH - dh) / 2, dw, dh);
+    const shade = g.createLinearGradient(0, IH * 0.5, 0, IH);
+    shade.addColorStop(0, 'rgba(24,20,37,0)'); shade.addColorStop(1, 'rgba(24,20,37,.94)');
+    g.fillStyle = shade; g.fillRect(0, IH * 0.5, IW, IH * 0.5);
+    const font = px => px + 'px "Press Start 2P", ui-monospace, monospace';
+    g.textBaseline = 'alphabetic';
+    if (shareState.headline) { g.fillStyle = '#fee761'; g.font = font(30); g.fillText(shareState.headline, 48, IH - 150); }
+    g.fillStyle = '#ffffff'; g.font = font(40); g.fillText(SITE.ticker + (mint && mc ? '  ' + usd(mc) : ''), 48, IH - 88);
+    g.fillStyle = '#c0cbdc'; g.font = font(18); g.fillText(shareUrl().replace(/^https?:\/\//, '').replace(/\/$/, ''), 48, IH - 40);
+    return new Promise(res => out.toBlob(res, 'image/png'));
+  }
+  document.querySelectorAll('[data-share]').forEach(b => b.onclick = async e => {
+    e.stopPropagation();
+    const url = shareUrl(), text = shareState.text || defaultShareText(), kind = b.dataset.share;
+    try {
+      if (kind === 'x') window.open('https://x.com/intent/tweet?text=' + encodeURIComponent(text) + '&url=' + encodeURIComponent(url), '_blank', 'noopener');
+      else if (kind === 'telegram') window.open('https://t.me/share/url?url=' + encodeURIComponent(url) + '&text=' + encodeURIComponent(text), '_blank', 'noopener');
+      else if (kind === 'native') await navigator.share({ title: SITE.name + ' (' + SITE.ticker + ')', text, url });
+      else if (kind === 'copy') {
+        await navigator.clipboard.writeText(text + ' ' + url);
+        const was = b.textContent; b.textContent = 'Copied'; setTimeout(() => { b.textContent = was; closeShare(); }, 1200); return;
+      } else if (kind === 'image') {
+        const blob = await makeShareImage();
+        const file = new File([blob], 'boulder-climb.png', { type: 'image/png' });
+        if (navigator.canShare && navigator.canShare({ files: [file] })) await navigator.share({ files: [file], text: text + ' ' + url });
+        else { const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = 'boulder-climb.png'; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 4000); }
+      }
+    } catch (err) { /* the visitor closed the share sheet */ }
+    closeShare();
+  });
+
+  // "Share this moment" pops up on the game after a milestone, whale flight or breakthrough (live coin only)
+  let momentTimer = null;
+  function shareMoment(text, headline) {
+    if (!mint) return;                     // demo moments aren't real, so they aren't shareable
+    const btn = $('#momentBtn');
+    btn.hidden = false;
+    btn.onclick = e => { e.stopPropagation(); openShare(text, headline, btn); };
+    clearTimeout(momentTimer); momentTimer = setTimeout(() => { btn.hidden = true; }, 12000);
+  }
 
   // ---------- Burn plan: edit freely ----------
   // `at` is the market cap in USD. After you burn at a step, paste the burn's Solscan link into `tx`
@@ -2290,6 +2410,7 @@
     const m = crossed[crossed.length - 1];
     if (!m) return;
     Sound.milestone();
+    shareMoment(`Sisyphus just pushed ${SITE.ticker} past ${usd(m)} market cap!`, usd(m) + ' reached!');
     if (!W) return;
     floaters.push({ x: W * 0.5, y: H * 0.36, screen: true, life: 3.2, text: usd(m) + ' reached!', color: '#fee761', size: 34 });
     flashT = 0.32;
