@@ -1424,7 +1424,7 @@
       launch(dur = 3) {
         if (!ready()) return;
         const t = now(), T = Math.max(1.8, dur);
-        const out = ac.createGain(); out.gain.value = 0.5; out.connect(sfxBus);
+        const out = ac.createGain(); out.gain.value = 0.35; out.connect(sfxBus);   // rocket volume
         const grit = ac.createWaveShaper(); grit.oversample = '2x';
         const curve = new Float32Array(1024), k = 6;
         for (let i = 0; i < 1024; i++) { const x = i / 511.5 - 1; curve[i] = ((1 + k) * x) / (1 + k * Math.abs(x)); }
