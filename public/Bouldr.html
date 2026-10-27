@@ -2152,6 +2152,13 @@
       sh = { x: c.x - R * 0.2, y: c.y + R * 0.95 + ARM() * 0.8 };
       armB = ik(sh, { x: c.x - R * 0.35, y: c.y + R * 0.9 }, ARM() * 0.52, ARM() * 0.5, 1);
       armF = ik(sh, { x: c.x + R * 0.05, y: c.y + R * 0.97 }, ARM() * 0.52, ARM() * 0.5, 1);
+      if (flight.mode === 'superman' && flight.smashed) {
+        // Breakthrough: no boulder to hold, so one arm punches forward the way he's flying and the other stays down at his side
+        const fa = frameAt(boulderS());
+        let ax = fa.tx * 0.8 + 0.25, ay = fa.ty * 0.8 - 0.55; const am = Math.hypot(ax, ay) || 1; ax /= am; ay /= am;
+        armF = ik(sh, { x: sh.x + ax * ARM() * 0.98, y: sh.y + ay * ARM() * 0.98 }, ARM() * 0.52, ARM() * 0.5, 1);
+        armB = ik(sh, { x: sh.x - U * 0.12, y: sh.y + ARM() * 0.92 }, ARM() * 0.52, ARM() * 0.5, -1);
+      }
       hip = { x: sh.x - U * 0.4, y: sh.y + TORSO() * 0.92 };
       const kn1 = { x: hip.x - U * 0.5, y: hip.y + U * 0.35 + flap * U * 0.06 }, kn2 = { x: hip.x - U * 0.3, y: hip.y + U * 0.5 - flap * U * 0.06 };
       legs = [{ knee: kn1, ft: { x: kn1.x - U * 0.55, y: kn1.y + U * 0.2 } }, { knee: kn2, ft: { x: kn2.x - U * 0.5, y: kn2.y + U * 0.35 } }];
