@@ -440,7 +440,7 @@
   <div class="cols">
     <div><h3><span class="tag" style="background: var(--buy)"></span>Buys push</h3><p>Every buy pushes the boulder uphill. Her height is the coin’s live market cap, so the bigger the pump, the further she climbs.</p></div>
     <div><h3><span class="tag" style="background: var(--sell)"></span>Sells slide</h3><p>Every sell lets the boulder grind back down while she digs in her heels. Paper hands have consequences.</p></div>
-    <div><h3><span class="tag" style="background: var(--burn)"></span>Pumps set her on fire</h3><p>Any 3% upswing lights her feet: the price jumping 3% in a minute, a single buy that moves it 3%, or trading volume climbing 3% on the minute before. Burns light her up too.</p></div>
+    <div><h3><span class="tag" style="background: var(--burn)"></span>Pumps set the boulder ablaze</h3><p>Any 3% upswing sets the boulder on fire: the price jumping 3% in a minute, a single buy that moves it 3%, or trading volume climbing 3% on the minute before. Burns light it up too.</p></div>
     <div><h3><span class="tag" style="background: #f7931a"></span>Holders earn BTC</h3><p>3% of every trade is paid to holders with $20 or more, in Bitcoin, several times an hour. Hold more, earn more.</p></div>
     <div><h3><span class="tag" style="background: var(--accent)"></span>Big buys hit different</h3><p>A 1 SOL buy triggers a mighty heave. 5 SOL gives her super strength, 10 SOL sends her flying, and 15 SOL smashes her straight through the boulder.</p></div>
     <div><h3><span class="tag" style="background: #fee761"></span>Milestones go off</h3><p>Every time the market cap passes a new milestone for the first time, fireworks fill the sky and the whole site celebrates.</p></div>
@@ -469,7 +469,7 @@
     <div>
       <h2 class="big">The burn</h2>
       <p id="burnText">Trades made right here on bouldr.fun include a 0.5% site fee. Every hour a bot uses it to buy <span data-site="ticker">$BOULDER</span> back off the market and burn it, taking it out of circulation for good. Supply only goes one way.</p>
-      <p>You can watch it happen live: each burn sets her feet on fire and shrinks the mountain.</p>
+      <p>You can watch it happen live: each burn sets the boulder on fire and shrinks the mountain.</p>
       <p data-burn-wallet hidden>Every buyback and burn happens in one public wallet, so you can check it yourself: <a id="burnWalletLink" target="_blank" rel="noopener"></a></p>
     </div>
     <div class="burn-nums">
@@ -1947,13 +1947,13 @@
     embers.forEach(e => { e.x += e.vx; e.y += e.vy; e.vy *= 0.99; e.life -= dt * 0.8; });
     embers = embers.filter(e => e.life > 0);
 
-    // Fire on her feet for as long as the burn is shrinking the mountain
+    // Fire under the boulder (where it grinds against the rock) for as long as the burn or upswing lasts
     fireHold = Math.max(0, fireHold - dt);
     const burning = shownSupply - supply > 1000 || fireHold > 0;
     fireLevel += ((burning ? 1 : 0) - fireLevel) * Math.min(1, dt * (burning ? 6 : 1.5));
-    if (fireLevel > 0.02 && pose.feetWorld) {
-      const rate = (reduceMotion ? 18 : 70) * fireLevel * dt;
-      pose.feetWorld.forEach(ft => {
+    if (fireLevel > 0.02 && L > 1) {
+      const rate = (reduceMotion ? 14 : 55) * fireLevel * dt;
+      boulderFirePoints().forEach(ft => {
         for (let n = rate + Math.random(); n >= 1; n--) flames.push({
           x: ft.x + (Math.random() - 0.3) * U * 0.35, y: ft.y - Math.random() * U * 0.08,
           vx: (Math.random() - 0.5) * U * 0.6, vy: -(U * 1.6 + Math.random() * U * 2.2) * (0.6 + 0.4 * fireLevel),
@@ -2682,12 +2682,18 @@
     ctx.restore();
   }
 
+  // Where the fire burns: along the bottom of the boulder, following it as it's pushed (and lifted) up the mountain
+  function boulderFirePoints() {
+    const f = frameAt(boulderS()), c = boulderCenter();
+    const bx = c.x - f.nx * R * 0.95, by = c.y - f.ny * R * 0.95;
+    return [-0.55, -0.15, 0.3].map(k => ({ x: bx + f.tx * R * k, y: by + f.ty * R * k }));
+  }
   function drawFire(time) {
     if (fireLevel < 0.02 && !flames.length) return;
     ctx.save();
-    // Glow pooled around her feet
-    if (pose.feetWorld && fireLevel > 0.02) pose.feetWorld.forEach((ft, i) => {
-      const r = U * (0.7 + 0.12 * Math.sin(time / 70 + i * 2));
+    // Glow pooled under the boulder
+    if (L > 1 && fireLevel > 0.02) boulderFirePoints().forEach((ft, i) => {
+      const r = U * (0.8 + 0.12 * Math.sin(time / 70 + i * 2));
       const g = ctx.createRadialGradient(ft.x, ft.y - U * 0.15, 0, ft.x, ft.y - U * 0.15, r);
       g.addColorStop(0, `rgba(255,170,70,${0.55 * fireLevel})`); g.addColorStop(1, 'rgba(255,90,30,0)');
       ctx.fillStyle = g; ctx.fillRect(ft.x - r, ft.y - U * 0.15 - r, r * 2, r * 2);
@@ -3053,10 +3059,10 @@
     hide($('#plan')); document.querySelectorAll('a[href="#plan"]').forEach(hide);
     hide($('#rewards')); document.querySelectorAll('a[href="#rewards"]').forEach(hide);
     document.querySelectorAll('[data-burn-wallet]').forEach(hide);
-    if (burns) $('#burnText').textContent = 'This coin burns supply. Every burn sets her feet on fire and shrinks the mountain, and the numbers here update live from the chain.';
+    if (burns) $('#burnText').textContent = 'This coin burns supply. Every burn sets the boulder on fire and shrinks the mountain, and the numbers here update live from the chain.';
     else { hide($('#burn')); document.querySelectorAll('a[href="#burn"]').forEach(hide); }
     const earn = document.querySelector('h1 .earn'); if (earn) earn.remove();
-    $('#heroText').textContent = 'Every buy of this coin pushes The Boulder Holders up the mountain and every sell lets the boulder slide back' + (burns ? ', and every burn sets their feet on fire.' : '.') + ' They never reach the top.';
+    $('#heroText').textContent = 'Every buy of this coin pushes The Boulder Holders up the mountain and every sell lets the boulder slide back' + (burns ? ', and every burn sets the boulder on fire.' : '.') + ' They never reach the top.';
     ['x', 'telegram', 'discord', 'tiktok', 'instagram', 'youtube', 'burnWallet', 'launchAt'].forEach(k => SITE[k] = '');
     SITE.url = location.origin + location.pathname + location.search;
     const applyName = (ticker, name) => {
