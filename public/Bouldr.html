@@ -438,11 +438,11 @@
   <h2 class="big">How the climb works</h2>
   <p class="sub">The game runs on the coin’s live trades. Nothing is scripted; the mountain only moves when the market does.</p>
   <div class="cols">
-    <div><h3><span class="tag" style="background: var(--buy)"></span>Buys push</h3><p>Every buy pushes the boulder uphill. His height is the coin’s live market cap, so the bigger the pump, the further he climbs.</p></div>
-    <div><h3><span class="tag" style="background: var(--sell)"></span>Sells slide</h3><p>Every sell lets the boulder grind back down while he digs in his heels. Paper hands have consequences.</p></div>
-    <div><h3><span class="tag" style="background: var(--burn)"></span>Pumps set him on fire</h3><p>Any 3% upswing lights his feet: the price jumping 3% in a minute, a single buy that moves it 3%, or trading volume climbing 3% on the minute before. Burns light him up too.</p></div>
+    <div><h3><span class="tag" style="background: var(--buy)"></span>Buys push</h3><p>Every buy pushes the boulder uphill. Her height is the coin’s live market cap, so the bigger the pump, the further she climbs.</p></div>
+    <div><h3><span class="tag" style="background: var(--sell)"></span>Sells slide</h3><p>Every sell lets the boulder grind back down while she digs in her heels. Paper hands have consequences.</p></div>
+    <div><h3><span class="tag" style="background: var(--burn)"></span>Pumps set her on fire</h3><p>Any 3% upswing lights her feet: the price jumping 3% in a minute, a single buy that moves it 3%, or trading volume climbing 3% on the minute before. Burns light her up too.</p></div>
     <div><h3><span class="tag" style="background: #f7931a"></span>Holders earn BTC</h3><p>3% of every trade is paid to holders with $20 or more, in Bitcoin, several times an hour. Hold more, earn more.</p></div>
-    <div><h3><span class="tag" style="background: var(--accent)"></span>Big buys hit different</h3><p>A 1 SOL buy triggers a mighty heave. 5 SOL gives him super strength, 10 SOL sends him flying, and 15 SOL smashes him straight through the boulder.</p></div>
+    <div><h3><span class="tag" style="background: var(--accent)"></span>Big buys hit different</h3><p>A 1 SOL buy triggers a mighty heave. 5 SOL gives her super strength, 10 SOL sends her flying, and 15 SOL smashes her straight through the boulder.</p></div>
     <div><h3><span class="tag" style="background: #fee761"></span>Milestones go off</h3><p>Every time the market cap passes a new milestone for the first time, fireworks fill the sky and the whole site celebrates.</p></div>
   </div>
 </section>
@@ -469,7 +469,7 @@
     <div>
       <h2 class="big">The burn</h2>
       <p id="burnText">Trades made right here on bouldr.fun include a 0.5% site fee. Every hour a bot uses it to buy <span data-site="ticker">$BOULDER</span> back off the market and burn it, taking it out of circulation for good. Supply only goes one way.</p>
-      <p>You can watch it happen live: each burn sets his feet on fire and shrinks the mountain.</p>
+      <p>You can watch it happen live: each burn sets her feet on fire and shrinks the mountain.</p>
       <p data-burn-wallet hidden>Every buyback and burn happens in one public wallet, so you can check it yourself: <a id="burnWalletLink" target="_blank" rel="noopener"></a></p>
     </div>
     <div class="burn-nums">
@@ -499,7 +499,7 @@
   <ol class="steps">
     <li><h3>Get a Solana wallet</h3><p>Install Phantom, Solflare or Backpack on your phone or browser and write down your recovery phrase somewhere safe.</p></li>
     <li><h3>Add SOL</h3><p>Buy SOL in your wallet app or on an exchange, then send it to your wallet address.</p></li>
-    <li><h3>Connect and push</h3><p>Connect your wallet in the Trade panel above and tap a quick buy, or buy on pump.fun. Then watch him climb.</p></li>
+    <li><h3>Connect and push</h3><p>Connect your wallet in the Trade panel above and tap a quick buy, or buy on pump.fun. Then watch her climb.</p></li>
   </ol>
 </section>
 
@@ -544,7 +544,7 @@
 
   // ---------- Milestones: market caps along the trail, evenly spaced, summit last ----------
   const MILESTONES = [3e3, 1e4, 2.5e4, 5e4, 1e5, 2.5e5, 5e5, 1e6, 5e6, 1e7, 2e7, 5e7, 1e8, 5e8, 1e9, 5e9, 1e10, 5e10, 1e11];
-  const SUMMIT = 1e12;                       // the summit he never reaches
+  const SUMMIT = 1e12;                       // the summit she never reaches
   const LADDER = [...MILESTONES, SUMMIT];
   const SEGS = LADDER.length - 1;
   // Trail length of each gap between milestones, in "regular" units. $3K to $10K is regular length,
@@ -560,7 +560,7 @@
     if (!(mc > LADDER[0])) return 0;
     let i = 0; while (i < SEGS - 1 && mc >= LADDER[i + 1]) i++;
     const f = (GAP_START[i] + GAPS[i] * Math.log(mc / LADDER[i]) / Math.log(LADDER[i + 1] / LADDER[i])) / GAP_SUM;
-    // Soft ceiling: he can creep toward the summit but never touch it
+    // Soft ceiling: she can creep toward the summit but never touch it
     return f < 0.97 ? f : 0.97 + 0.025 * (1 - Math.exp(-(f - 0.97) / 0.025));
   }
   const nextMilestone = mc => MILESTONES.find(m => m > mc) || SUMMIT;
@@ -580,11 +580,11 @@
   let moving = 0, footS = 0;
   let floaters = [], dust = [], embers = [], flames = [];
   let fireLevel = 0, fireHold = 0; // feet catch fire while a burn plays out
-  // Big buys: 1+ SOL triggers a mighty heave, 5+ SOL gives him super strength for a while
+  // Big buys: 1+ SOL triggers a mighty heave, 5+ SOL gives her super strength for a while
   const MIGHTY_SOL = 1, SUPER_SOL = 5;
-  // Flight: a whale buy or a fast market cap surge sends him flying with the boulder to the next cap
+  // Flight: a whale buy or a fast market cap surge sends her flying with the boulder to the next cap
   const WHALE_SOL = 10;            // any single buy of this many SOL or more is a whale buy
-  const BREAK_SOL = 15;            // 15+ SOL: he smashes through the boulder and flies like a superhero; a new boulder drops in when he lands
+  const BREAK_SOL = 15;            // 15+ SOL: she smashes through the boulder and flies like a superhero; a new boulder drops in when she lands
   const SOAR_PCT = 0.5;            // market cap up 50%...
   const SOAR_WINDOW_S = 60;        // ...within 60 seconds, and past a milestone, also triggers a flight
   const flight = { active: false, t: 0, dur: 2, from: 0, to: 0, hold: 0, lift: 0, mode: 'carry', smash: 0, smashed: false, dropT: 0 };
@@ -1732,7 +1732,7 @@
         // 1) ignition: a deep boom and a crack of fire
         tone(60, t, 0.8, { wave: 'sine', slide: 26, vol: 0.9, bus: out });
         noise(t, 0.45, { filter: 'lowpass', freq: 5000, freqTo: 350, vol: 0.7, bus: out });
-        // 2) the roar: low noise that rumbles (tremolo) and swells, held through the flight, fading as he lands
+        // 2) the roar: low noise that rumbles (tremolo) and swells, held through the flight, fading as she lands
         const src = ac.createBufferSource(); src.buffer = noiseBuf; src.loop = true;
         const lp = ac.createBiquadFilter(); lp.type = 'lowpass'; lp.Q.value = 0.7;
         lp.frequency.setValueAtTime(420, t); lp.frequency.linearRampToValueAtTime(950, t + T * 0.5); lp.frequency.linearRampToValueAtTime(600, t + T);
@@ -1750,7 +1750,7 @@
         subG.gain.setValueAtTime(0.0001, t); subG.gain.exponentialRampToValueAtTime(0.55, t + 0.25);
         subG.gain.setValueAtTime(0.55, t + T * 0.6); subG.gain.exponentialRampToValueAtTime(0.0001, t + T + 0.3);
         sub.connect(subG); subG.connect(out); sub.start(t); sub.stop(t + T + 0.35);
-        // 4) rising whoosh as he picks up speed
+        // 4) rising whoosh as she picks up speed
         noise(t + 0.1, T * 0.9, { filter: 'bandpass', freq: 180, freqTo: 2400, q: 0.9, vol: 0.5, attack: 0.5, bus: out });
         // 5) engine crackle
         const pops = Math.round(14 * T);
@@ -1821,7 +1821,7 @@
     }
     return {
       ...fx, wire,
-      // Music gets busier when the boulder is moving, a big buy hits, or he's flying
+      // Music gets busier when the boulder is moving, a big buy hits, or she's flying
       tick(dt, target, m = 0) { energy += (target - energy) * Math.min(1, dt * 1.5); mood += (m - mood) * Math.min(1, dt * 0.8); },
     };
   })();
@@ -1877,7 +1877,7 @@
         flight.lift = Math.min(H * 0.3, R * 4.5) * Math.pow(Math.sin(Math.PI * k), 0.6);
         moving = 1;
       }
-      // rocket jets from his feet and a sparkle trail behind
+      // rocket jets from her feet and a sparkle trail behind
       if (tt >= 0 && pose.feetWorld && !reduceMotion) pose.feetWorld.forEach(ft => {
         for (let n = 0; n < 3; n++) flames.push({ x: ft.x + (Math.random() - 0.5) * U * 0.2, y: ft.y, vx: -U * (0.5 + Math.random()), vy: U * (1.5 + Math.random() * 2), life: 0.8, r: U * (0.08 + Math.random() * 0.1) });
       });
@@ -1886,7 +1886,7 @@
       if (k >= 1) {
         flight.active = false; flight.lift = 0; flight.hold = 1.4; flight.endedAt = performance.now();
         Sound.land();
-        if (superFly) { flight.dropT = 0.85; flight.hold = 1.9; }   // a fresh boulder falls into his hands
+        if (superFly) { flight.dropT = 0.85; flight.hold = 1.9; }   // a fresh boulder falls into her hands
         const f = frameAt(boulderS());
         rings.push({ x: f.x, y: f.y, r: R * 0.5, life: 1.2, big: true });
         power.shake = U * 0.8;
@@ -1947,7 +1947,7 @@
     embers.forEach(e => { e.x += e.vx; e.y += e.vy; e.vy *= 0.99; e.life -= dt * 0.8; });
     embers = embers.filter(e => e.life > 0);
 
-    // Fire on his feet for as long as the burn is shrinking the mountain
+    // Fire on her feet for as long as the burn is shrinking the mountain
     fireHold = Math.max(0, fireHold - dt);
     const burning = shownSupply - supply > 1000 || fireHold > 0;
     fireLevel += ((burning ? 1 : 0) - fireLevel) * Math.min(1, dt * (burning ? 6 : 1.5));
@@ -1993,7 +1993,7 @@
     return { joint: j, end: { x: a.x + dx, y: a.y + dy } };
   }
 
-  // Where his body sits for a given foot position. Upright, arms raised overhead into the boulder.
+  // Where her body sits for a given foot position. Upright, arms raised overhead into the boulder.
   const TORSO = () => U * 0.95, ARM = () => U * 1.25;
   function bodyFrame(s, lean, c) {
     const bx = Math.sin(lean), by = -Math.cos(lean);
@@ -2002,7 +2002,7 @@
     const sh = { x: hip.x + bx * TORSO(), y: hip.y + by * TORSO() };
     return { F, hip, sh, bx, by };
   }
-  // Palms sit on the lower, downhill side of the boulder (angle measured from its centre), so his arms drive up into it
+  // Palms sit on the lower, downhill side of the boulder (angle measured from its centre), so her arms drive up into it
   const PALM_F = 2.25, PALM_B = 2.05;
   function palmPoint(c, a) {
     // keep the palms on the same spot of the slope even as the boulder rolls
@@ -2048,7 +2048,7 @@
         f.u += (want / L - f.u) * Math.min(1, dt * 10);
       });
     } else {
-      // Near the summit he barely gains ground, so the planted foot slips back and he keeps re-stepping
+      // Near the summit she barely gains ground, so the planted foot slips back and she keeps re-stepping
       if (moving === 1 && speed < U * 1.2) {
         pose.slip = U * 1.1;
         feet.forEach(f => { if (!f.sw) f.u -= (pose.slip * dt) / L; });
@@ -2277,7 +2277,7 @@
     disc.addColorStop(0, `rgba(255,246,222,${0.5 + 0.5 * p})`); disc.addColorStop(1, `rgba(255,190,120,${0.4 + 0.5 * p})`);
     ctx.fillStyle = disc; ctx.beginPath(); ctx.arc(sunX, sunY, sunR, 0, Math.PI * 2); ctx.fill();
 
-    // Clouds drift past as he climbs (parallax)
+    // Clouds drift past as she climbs (parallax)
     ctx.globalAlpha = 0.5 + 0.3 * p;
     clouds.forEach(c => {
       const y = ((c.y + climbPx * 0.25) % (H * 1.8) + H * 1.8) % (H * 1.8) - H * 0.4;
@@ -2285,7 +2285,7 @@
     });
     ctx.globalAlpha = 1;
 
-    // Distant ranges sink below him as he gains height
+    // Distant ranges sink below her as she gains height
     const rangeNear = mixc('#68386c', '#b55088', p);
     ranges.forEach((pts, k) => {
       const haze = [0.7, 0.5, 0.32, 0.16][k];
@@ -2300,7 +2300,7 @@
       mist.addColorStop(0, css(horizon, 0)); mist.addColorStop(1, css(horizon, 0.22 - k * 0.04));
       ctx.fillStyle = mist; ctx.fillRect(0, my, W, H * 0.12);
     });
-    // Sea of cloud far below once he's high up
+    // Sea of cloud far below once she's high up
     if (climbPx > H * 0.3) {
       const a = Math.min(0.55, (climbPx - H * 0.3) / (H * 3));
       const sea = ctx.createLinearGradient(0, H * 0.55, 0, H);
@@ -2424,7 +2424,7 @@
       armB = ik(sh, { x: c.x - R * 0.35, y: c.y + R * 0.9 }, ARM() * 0.52, ARM() * 0.5, 1);
       armF = ik(sh, { x: c.x + R * 0.05, y: c.y + R * 0.97 }, ARM() * 0.52, ARM() * 0.5, 1);
       if (flight.mode === 'superman' && flight.smashed) {
-        // Breakthrough: no boulder to hold, so one arm punches forward the way he's flying and the other stays down at his side
+        // Breakthrough: no boulder to hold, so one arm punches forward the way she's flying and the other stays down at her side
         const fa = frameAt(boulderS());
         let ax = fa.tx * 0.8 + 0.25, ay = fa.ty * 0.8 - 0.55; const am = Math.hypot(ax, ay) || 1; ax /= am; ay /= am;
         armF = ik(sh, { x: sh.x + ax * ARM() * 0.98, y: sh.y + ay * ARM() * 0.98 }, ARM() * 0.52, ARM() * 0.5, 1);
@@ -2623,7 +2623,7 @@
         ctx.fillStyle = `rgba(255,230,150,${sp.life * sl})`;
         ctx.beginPath(); ctx.arc(sp.x, sp.y, sp.r, 0, Math.PI * 2); ctx.fill();
       });
-      // Crackling lightning around him
+      // Crackling lightning around her
       if (!reduceMotion && Math.random() < 0.45 * sl) {
         for (let k = 0; k < 2; k++) {
           const a = Math.random() * Math.PI * 2, len = U * (0.9 + Math.random() * 0.8);
@@ -2638,7 +2638,7 @@
           ctx.stroke();
         }
       }
-      // Speed streaks while he powers up the slope
+      // Speed streaks while she powers up the slope
       if (moving === 1) {
         const f = frameAt(boulderS());
         ctx.strokeStyle = `rgba(255,240,200,${0.35 * sl})`; ctx.lineWidth = 2;
@@ -2656,7 +2656,7 @@
   function drawFire(time) {
     if (fireLevel < 0.02 && !flames.length) return;
     ctx.save();
-    // Glow pooled around his feet
+    // Glow pooled around her feet
     if (pose.feetWorld && fireLevel > 0.02) pose.feetWorld.forEach((ft, i) => {
       const r = U * (0.7 + 0.12 * Math.sin(time / 70 + i * 2));
       const g = ctx.createRadialGradient(ft.x, ft.y - U * 0.15, 0, ft.x, ft.y - U * 0.15, r);
@@ -3024,7 +3024,7 @@
     hide($('#plan')); document.querySelectorAll('a[href="#plan"]').forEach(hide);
     hide($('#rewards')); document.querySelectorAll('a[href="#rewards"]').forEach(hide);
     document.querySelectorAll('[data-burn-wallet]').forEach(hide);
-    if (burns) $('#burnText').textContent = 'This coin burns supply. Every burn sets his feet on fire and shrinks the mountain, and the numbers here update live from the chain.';
+    if (burns) $('#burnText').textContent = 'This coin burns supply. Every burn sets her feet on fire and shrinks the mountain, and the numbers here update live from the chain.';
     else { hide($('#burn')); document.querySelectorAll('a[href="#burn"]').forEach(hide); }
     const earn = document.querySelector('h1 .earn'); if (earn) earn.remove();
     $('#heroText').textContent = 'Every buy of this coin pushes The Boulder Holders up the mountain and every sell lets the boulder slide back' + (burns ? ', and every burn sets their feet on fire.' : '.') + ' They never reach the top.';
