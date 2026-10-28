@@ -7,6 +7,9 @@
 // Uses the secret RPC_URL (your Helius link) if set; otherwise falls back to Solana's free public RPC,
 // which works for light traffic but can be rate-limited. The key never reaches the browser.
 
+import { BurnLog, scheduledBurn } from './burnbot.js';
+export { BurnLog };
+
 const MINT_RE = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/;
 const PUBLIC_RPC = 'https://api.mainnet-beta.solana.com';
 const rpcUrl = env => env.RPC_URL || PUBLIC_RPC;
@@ -25,11 +28,21 @@ export default {
       const res = await stub.fetch('https://tracker/snapshot?mint=' + mint);
       return cors(new Response(res.body, { status: res.status, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } }));
     }
+    if (url.pathname === '/api/burns') {
+      // Public burn history for the website (read-only)
+      if (!env.BURNS) return cors(json({ error: 'The burn log isn\u2019t set up' }, 500));
+      const res = await env.BURNS.get(env.BURNS.idFromName('main')).fetch('https://burns/list');
+      return cors(new Response(res.body, { headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } }));
+    }
     if (url.pathname === '/api/rpc') {
       if (request.method === 'OPTIONS') return cors(new Response(null, { status: 204 }));
       return cors(await rpcProxy(request, env));
     }
     return env.ASSETS.fetch(request);
+  },
+  // Every hour ("triggers" in wrangler.jsonc): claim creator fees, buy the coin back, burn it
+  async scheduled(event, env, ctx) {
+    ctx.waitUntil(scheduledBurn(env));
   },
 };
 
@@ -103,12 +116,12 @@ export class LiveCoin {
 
       const parsed = [];
       for (let i = 0; i < toParse.length; i += 4) {               // 4 at a time
-        const batch = await Promise.all(toParse.slice(i, i + 4).map(sig => parseTrade(env, sig, s.mint).catch(() => null)));
+        const batch = await Promise.all(toParse.slice(i, i + 4).map(sig => parseTrade(env, sig, s.mint, s.solUsd).catch(() => null)));
         parsed.push(...batch);
       }
       // Market cap from each trade's price. Tiny trades (fees dominate) and wild outliers are not trusted for price;
       // they still count as buys/sells for the game, they just don't move the market cap.
-      const toMc = t => (s.solUsd && s.supply ? t.priceSol * s.supply * s.solUsd : 0);
+      const toMc = t => (s.supply ? (t.priceUsd ? t.priceUsd * s.supply : s.solUsd ? t.priceSol * s.supply * s.solUsd : 0) : 0);
       const pool = [...parsed.filter(Boolean), ...s.trades].filter(t => t.sol >= 0.01).map(toMc).filter(v => v > 0).sort((x, y) => x - y);
       const ref = pool.length ? pool[Math.floor(pool.length / 2)] : 0;
       const newTrades = parsed.filter(Boolean).map(t => {
@@ -167,7 +180,22 @@ async function rpcProxy(request, env) {
 
 // A transaction becomes a buy or sell from the point of view of the wallet that paid for it.
 // Works for the pump.fun bonding curve, PumpSwap after migration, and routers like Jupiter.
-async function parseTrade(env, sig, mint) {
+// Quote-token prices (e.g. wrapped BTC) for valuing trades on Custom Pair coins; cached for a minute
+const quotePrices = new Map();
+async function tokenUsd(m) {
+  const hit = quotePrices.get(m);
+  if (hit && Date.now() - hit.at < 60000) return hit.usd;
+  let usd = 0;
+  try {
+    const j = await (await fetch('https://lite-api.jup.ag/price/v3?ids=' + m)).json();
+    const v = j[m] || j.data?.[m];
+    usd = Number(v?.usdPrice || v?.price) || 0;
+  } catch {}
+  quotePrices.set(m, { usd, at: Date.now() });
+  return usd;
+}
+
+async function parseTrade(env, sig, mint, solUsd = 0) {
   const tx = await rpc(env, 'getTransaction', [sig, { encoding: 'json', maxSupportedTransactionVersion: 0, commitment: 'confirmed' }]);
   if (!tx || !tx.meta || tx.meta.err) return null;
   const payer = tx.transaction.message.accountKeys[0];
@@ -178,11 +206,22 @@ async function parseTrade(env, sig, mint) {
   if (Math.abs(dTok) < 1e-6) return null;
   const dSol = (tx.meta.postBalances[0] - tx.meta.preBalances[0] + tx.meta.fee) / 1e9
     + (sum(tx.meta.postTokenBalances, WSOL) - sum(tx.meta.preTokenBalances, WSOL));
+  // The payer's change in every other token (the quote side, e.g. wrapped BTC on a Bitcoin-paired coin)
+  const others = new Set([...(tx.meta.preTokenBalances || []), ...(tx.meta.postTokenBalances || [])]
+    .filter(b => b.owner === payerKey && b.mint !== mint && b.mint !== WSOL).map(b => b.mint));
+  let quoteUsd = dSol * solUsd;
+  for (const m of others) {
+    const d = sum(tx.meta.postTokenBalances, m) - sum(tx.meta.preTokenBalances, m);
+    if (Math.abs(d) > 0) quoteUsd += d * (await tokenUsd(m));
+  }
   const type = dTok > 0 ? 'buy' : 'sell';
-  if (type === 'buy' && dSol >= -0.00001) return null;   // tokens arrived without SOL leaving: a transfer
-  if (type === 'sell' && dSol <= 0.00001) return null;   // tokens left without SOL arriving: a transfer
-  const sol = Math.abs(dSol), tokens = Math.abs(dTok);
-  return { sig, type, sol, tokens, priceSol: sol / tokens, wallet: payerKey, time: tx.blockTime || 0, slot: tx.slot || 0 };
+  if (solUsd > 0) {
+    if (type === 'buy' && quoteUsd >= -0.01) return null;   // tokens arrived without value leaving: a transfer
+    if (type === 'sell' && quoteUsd <= 0.01) return null;   // tokens left without value arriving: a transfer
+  } else if ((type === 'buy' && dSol >= -0.00001) || (type === 'sell' && dSol <= 0.00001)) return null;
+  const tokens = Math.abs(dTok);
+  const usd = Math.abs(quoteUsd), sol = solUsd > 0 ? usd / solUsd : Math.abs(dSol);   // size in SOL terms, for the game
+  return { sig, type, sol, usd, tokens, priceSol: sol / tokens, priceUsd: solUsd > 0 ? usd / tokens : 0, wallet: payerKey, time: tx.blockTime || 0, slot: tx.slot || 0 };
 }
 
 async function solPrice() {
