@@ -634,9 +634,10 @@
     ctx.setTransform(lowW / W, 0, 0, lowH / H, 0, 0);
     fxCanvas.width = Math.round(W * dpr); fxCanvas.height = Math.round(H * dpr);
     fx.setTransform(dpr, 0, 0, dpr, 0, 0);
-    R = Math.max(28, Math.min(W, H) * (W < 600 ? 0.12 : 0.11));
+    const ZOOM = 0.8;   // camera zoom: lower shows more of the mountain (0.8 = zoomed out 25% from the original)
+    R = Math.max(28, Math.min(W, H) * (W < 600 ? 0.12 : 0.11)) * ZOOM;
     U = R * 0.72;
-    SEG = Math.max(320, Math.min(560, Math.min(W, H) * 0.95)); // trail length between milestones
+    SEG = Math.max(320, Math.min(560, Math.min(W, H) * 0.95)) * ZOOM; // trail length between milestones
     const total = SEG * GAP_SUM, ang = 0.8;                         // ~46° average climb, steep like a cliff face
     base = { x: W * 0.12, y: H * 0.86 };
     fullPeak = { x: base.x + total * Math.cos(ang) * 0.93, y: base.y - total * Math.sin(ang) * 0.93 };
