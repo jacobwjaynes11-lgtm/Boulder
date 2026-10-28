@@ -166,6 +166,7 @@
   .page h2.big { font-family: var(--display); font-weight: 700; font-size: clamp(28px, 3.6vw, 42px); line-height: 1.1; margin: 0 0 12px; }
   .page > p.sub { color: var(--muted); max-width: 62ch; font-size: 17px; margin: 0; }
   .cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: 28px 32px; margin-top: 30px; }
+  #how .cols { grid-template-columns: repeat(auto-fit, minmax(min(100%, 300px), 1fr)); }
   .cols h3 { font-family: var(--display); font-weight: 700; font-size: 19px; margin: 0 0 6px; }
   .cols p { color: var(--muted); margin: 0; }
   .cols .tag { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 8px; vertical-align: 1px; }
@@ -184,6 +185,25 @@
   .launch-page { max-width: 560px; }
   .launch-page h2.big { margin-bottom: 8px; }
   .launch-page .lede { font-size: 17px; max-width: none; }
+  .countdown { margin: 22px 0 0; display: inline-flex; flex-direction: column; gap: 8px; padding: 18px 20px; border: 1px solid var(--line); border-radius: 16px; background: var(--panel); max-width: 100%; }
+  .countdown[hidden] { display: none; }
+  .cd-label { font-size: 15px; font-weight: 600; margin: 0; }
+  .cd-time { font-family: "Press Start 2P", ui-monospace, monospace; font-size: clamp(20px, 4vw, 34px); line-height: 1.35; color: var(--ink); }
+  .cd-time span { color: var(--muted); font-size: .5em; margin: 0 .7em 0 .15em; }
+  .cd-note { color: var(--muted); font-size: 14px; margin: 0 0 4px; }
+  .cd-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+  .cd-actions .btn { margin: 0; }
+  h1 .earn { color: #c2630a; white-space: nowrap; }
+  @media (prefers-color-scheme: dark) { h1 .earn { color: #f7931a; } }
+  .share-note { margin-top: 14px; max-width: 70ch; }
+  .burn-feed { margin-top: 30px; }
+  .burn-feed h3 { font-family: var(--display); font-size: 22px; margin: 0 0 4px; }
+  .burn-note { color: var(--muted); font-size: 14px; margin: 0 0 12px; }
+  .burn-feed ol { list-style: none; padding: 0; margin: 0; display: grid; gap: 8px; }
+  .burn-feed li { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 6px 14px; padding: 12px 14px; border: 1px solid var(--line); border-radius: 12px; background: var(--panel); font-size: 15px; }
+  .burn-feed li b { color: var(--burn); }
+  .burn-feed li span:last-child { color: var(--muted); }
+  .burn-feed li a { color: inherit; }
   label.check { display: flex; align-items: center; gap: 10px; font-weight: 400; color: var(--muted); margin: 12px 0 0; cursor: pointer; }
   label.check input { width: 18px; height: 18px; margin: 0; accent-color: var(--accent); flex: none; }
   @media (max-width: 760px) { .page { padding: 48px 16px; } }
@@ -286,6 +306,7 @@
     <nav class="nav" aria-label="Sections">
       <a href="#play">Play</a>
       <a href="#how">How it works</a>
+      <a href="#rewards">Earn BTC</a>
       <a href="#burn">The burn</a>
       <a href="#plan">Burn plan</a>
       <a href="#buy">How to buy</a>
@@ -296,8 +317,8 @@
 </header>
 
 <div class="hero" id="top">
-  <h1>Push the boulder.</h1>
-  <p id="heroText"><span data-site="name">Boulder</span> is a meme coin with a game strapped to it. Every buy pushes Sisyphus up the mountain, every sell lets the boulder slide back, and creator fees buy the coin back and burn it. He never reaches the top. That’s the point.</p>
+  <h1>Push the boulder. <span class="earn">Earn BTC.</span></h1>
+  <p id="heroText"><span data-site="name">Boulder</span> is a meme coin paired with Bitcoin, with a game strapped to it. Every buy pushes Sisyphus up the mountain, every sell lets the boulder slide back, and 3% of every trade is paid to holders in BTC. He never reaches the top. That’s the point.</p>
   <div class="cta">
     <a class="btn buy-link" href="#buy" target="_blank" rel="noopener">Buy <span data-site="ticker">$BOULDER</span></a>
     <span class="ca-chip" data-ca-wrap hidden>CA <code data-ca></code><button class="ghost small" data-copy-ca>Copy</button></span>
@@ -314,6 +335,15 @@
     </span>
   </div>
   <div class="socials hero-socials" id="heroSocials" hidden></div>
+  <div class="countdown" id="countdown" hidden>
+    <p class="cd-label" id="cdLabel">Launching soon</p>
+    <div class="cd-time" id="cdTime"></div>
+    <p class="cd-note">Fair launch on pump.fun, paired with Bitcoin. No presale. Holders with $20+ share 3% of every trade, paid in BTC.</p>
+    <div class="cd-actions">
+      <a class="btn" id="cdAlert" target="_blank" rel="noopener" hidden>Get the launch alert</a>
+      <button class="ghost" id="cdCal">Add to calendar</button>
+    </div>
+  </div>
 </div>
 
 <main id="play">
@@ -361,7 +391,7 @@
         <a class="pump" id="pumpLink" target="_blank" rel="noopener" hidden>View on pump.fun</a>
       </div>
       <p class="status" id="tradeStatus"></p>
-      <p class="fine">Trades are built by PumpPortal (0.5% fee) and signed in your own wallet; this page never sees your keys. Meme coins are extremely risky. Only trade what you can afford to lose.</p>
+      <p class="fine" id="tradeFine">Trades are built by PumpPortal (0.5% fee) and signed in your own wallet; this page never sees your keys. Meme coins are extremely risky. Only trade what you can afford to lose.</p>
     </section>
 
     <section class="stats">
@@ -410,18 +440,37 @@
   <div class="cols">
     <div><h3><span class="tag" style="background: var(--buy)"></span>Buys push</h3><p>Every buy pushes the boulder uphill. His height is the coin’s live market cap, so the bigger the pump, the further he climbs.</p></div>
     <div><h3><span class="tag" style="background: var(--sell)"></span>Sells slide</h3><p>Every sell lets the boulder grind back down while he digs in his heels. Paper hands have consequences.</p></div>
-    <div><h3><span class="tag" style="background: var(--burn)"></span>Burns burn</h3><p>When supply gets burned, his feet catch fire and the whole mountain shrinks to match the smaller supply.</p></div>
-    <div><h3><span class="tag" style="background: var(--accent)"></span>Big buys hit different</h3><p>A 1 SOL buy triggers a mighty heave. A 5 SOL buy gives him super strength for a few seconds, and he pushes like it weighs nothing.</p></div>
+    <div><h3><span class="tag" style="background: var(--burn)"></span>Pumps set him on fire</h3><p>Any 3% upswing lights his feet: the price jumping 3% in a minute, a single buy that moves it 3%, or trading volume climbing 3% on the minute before. Burns light him up too.</p></div>
+    <div><h3><span class="tag" style="background: #f7931a"></span>Holders earn BTC</h3><p>3% of every trade is paid to holders with $20 or more, in Bitcoin, several times an hour. Hold more, earn more.</p></div>
+    <div><h3><span class="tag" style="background: var(--accent)"></span>Big buys hit different</h3><p>A 1 SOL buy triggers a mighty heave. 5 SOL gives him super strength, 10 SOL sends him flying, and 15 SOL smashes him straight through the boulder.</p></div>
+    <div><h3><span class="tag" style="background: #fee761"></span>Milestones go off</h3><p>Every time the market cap passes a new milestone for the first time, fireworks fill the sky and the whole site celebrates.</p></div>
   </div>
+</section>
+
+<section class="page" id="rewards">
+  <div class="burn-wrap">
+    <div>
+      <h2 class="big">Hold it, earn BTC</h2>
+      <p><span data-site="ticker">$BOULDER</span> trades against Bitcoin. 3% of every buy and every sell goes to holders, paid in wrapped BTC straight to your wallet several times an hour. Nothing to claim or stake: just hold at least $20 worth.</p>
+      <p>Pump.fun runs the payouts automatically and splits them by how much you hold, so the bigger your bag, the bigger your share. Payouts come from trading, so they aren’t guaranteed and can be zero in quiet hours.</p>
+    </div>
+    <div class="burn-nums">
+      <div>Holder rewards<b>3%</b></div>
+      <div>Paid in<b>BTC</b></div>
+      <div>To qualify<b>$20+</b></div>
+      <div class="f">Your share<b id="myShareStat">—</b></div>
+    </div>
+  </div>
+  <p class="burn-note share-note" id="myShareNote">Connect your wallet in the Trade panel to see your share of each payout.</p>
 </section>
 
 <section class="page" id="burn">
   <div class="burn-wrap">
     <div>
       <h2 class="big">The burn</h2>
-      <p id="burnText">Every trade pays creator fees. We regularly claim them, buy the coin back off the market and burn it, taking it out of circulation for good. Supply only goes one way.</p>
+      <p id="burnText">Trades made right here on bouldr.fun include a 0.5% site fee. Every hour a bot uses it to buy <span data-site="ticker">$BOULDER</span> back off the market and burn it, taking it out of circulation for good. Supply only goes one way.</p>
       <p>You can watch it happen live: each burn sets his feet on fire and shrinks the mountain.</p>
-      <p data-burn-wallet hidden>Every claim, buyback and burn happens in one public wallet, so you can check it yourself: <a id="burnWalletLink" target="_blank" rel="noopener"></a></p>
+      <p data-burn-wallet hidden>Every buyback and burn happens in one public wallet, so you can check it yourself: <a id="burnWalletLink" target="_blank" rel="noopener"></a></p>
     </div>
     <div class="burn-nums">
       <div>Supply<b id="burnSupply">1B</b></div>
@@ -430,11 +479,16 @@
       <div>Peak market cap<b id="burnAth">—</b></div>
     </div>
   </div>
+  <div class="burn-feed" id="burnFeed" hidden>
+    <h3>Recent burns</h3>
+    <p class="burn-note" id="burnBotNote"></p>
+    <ol id="burnList"></ol>
+  </div>
 </section>
 
 <section class="page" id="plan">
   <h2 class="big">Burn plan</h2>
-  <p class="sub">Creator fees are claimed, used to buy the coin back and burned by hand at each of these market caps. Each burn gets marked here with its transaction once it’s done.</p>
+  <p class="sub">The 0.5% site fee from trades on bouldr.fun buys the coin back and burns it every hour from launch. These market caps are the milestones on the climb. Once each one is reached, the burning carries on hour after hour, and the more people trade here, the more gets burned.</p>
   <ol class="plan-list" id="planList"></ol>
   <p class="plan-regular" id="planRegular"></p>
 </section>
@@ -469,7 +523,7 @@
     <a class="brand" href="#top" data-site="ticker">$BOULDER</a>
     <div class="socials" id="socials"></div>
     <span class="ca-chip" data-ca-wrap hidden>CA <code data-ca></code><button class="ghost small" data-copy-ca>Copy</button></span>
-    <p class="disclaimer"><span data-site="ticker">$BOULDER</span> is a meme coin with no intrinsic value and no expectation of financial return. Nothing on this site is financial advice. Crypto is volatile and you can lose everything you put in, so only use what you can afford to lose.</p>
+    <p class="disclaimer"><span data-site="ticker">$BOULDER</span> is a meme coin with no intrinsic value. Holder rewards are paid automatically by pump.fun from trading fees; they depend entirely on trading activity, aren’t guaranteed, and can be zero. Nothing on this site is financial advice. Crypto is volatile and you can lose everything you put in, so only use what you can afford to lose.</p>
   </div>
 </footer>
 
@@ -712,6 +766,7 @@
       const now = performance.now() / 1000;
       mcHistory.push([now, mc]); mcHistory = mcHistory.filter(h => now - h[0] <= SOAR_WINDOW_S);
       const low = Math.min(...mcHistory.map(h => h[1]), prev || mc);
+      if (low > 0 && mc >= low * (1 + FIRE_PCT)) igniteFeet('Up ' + Math.round((mc / low - 1) * 100) + '% in a minute');
       const sinceFlight = flight.endedAt ? (performance.now() - flight.endedAt) / 1000 : Infinity;   // don't re-fly on the same pump right after a flight
       if (!soarBlocked && sinceFlight > SOAR_WINDOW_S && low > 0 && mc >= low * (1 + SOAR_PCT) && nextMilestone(low) <= mc) startFlight('soar', low);
     }
@@ -723,11 +778,13 @@
     sol = Number(sol) || 0;
     if (type === 'buy') buys++; else sells++;
     volume += sol;
+    tradeLog.push([Date.now(), sol]);
     const before = mc;
     const whale = type === 'buy' && sol >= WHALE_SOL;
     soarBlocked = whale;
     if (newMc > 0) setMarketCap(newMc);
     soarBlocked = false;
+    if (type === 'buy' && before > 0 && mc >= before * (1 + FIRE_PCT)) igniteFeet('That buy moved it +' + Math.round((mc / before - 1) * 100) + '%');
     if (whale) startFlight(sol >= BREAK_SOL ? 'break' : 'whale', before);
     if (type === 'buy' && sol >= SUPER_SOL) startSuper(sol);
     else if (type === 'buy' && sol >= MIGHTY_SOL) startHeave(false);
@@ -817,6 +874,53 @@
     for (let n = 0; n < 20; n++) dust.push({ x: f.x + (Math.random() - 0.5) * R * 2.4, y: f.y, vx: (Math.random() - 0.5) * 5, vy: -Math.random() * 3, life: 1, r: 2 + Math.random() * 3 });
   }
 
+  // ---------- Feet on fire: any 3%+ upswing (price in a minute, one big buy, or trading volume) ----------
+  const FIRE_PCT = 0.03;               // 3%
+  const FIRE_MIN_VOLUME_SOL = 0.5;     // volume swings only count once at least this much is trading per minute
+  let tradeLog = [], lastIgnite = 0, volumeHot = false;
+  function igniteFeet(label) {
+    fireHold = Math.max(fireHold, 2.5);
+    const now = performance.now();
+    if (now - lastIgnite < 6000) return;           // keeps burning, without spamming the banner and sound
+    lastIgnite = now;
+    Sound.burn();
+    if (!W) return;
+    floaters.push({ x: cam.x + W * 0.5, y: cam.y + H * 0.32, life: 1.6, text: '🔥 ' + label, color: '#ffc27a' });
+  }
+  setInterval(() => {
+    const t = Date.now();
+    if (tradeLog.length && t - tradeLog[0][0] > 7200000) tradeLog = tradeLog.filter(x => t - x[0] < 7200000);
+    let cur = 0, prev = 0;
+    for (const [ts, sol] of tradeLog) { const age = t - ts; if (age < 60000) cur += sol; else if (age < 120000) prev += sol; }
+    const hot = prev > 0 && cur >= prev * (1 + FIRE_PCT) && cur >= FIRE_MIN_VOLUME_SOL;
+    if (hot && !volumeHot) igniteFeet('Volume up ' + Math.round((cur / prev - 1) * 100) + '%');
+    if (hot) fireHold = Math.max(fireHold, 1.2);   // stays lit while volume keeps climbing
+    volumeHot = hot;
+  }, 1000);
+  const volumeSince = ms => { const t = Date.now(); return tradeLog.reduce((s, [ts, sol]) => s + (t - ts < ms ? sol : 0), 0); };
+
+  // ---------- Your share of the BTC holder rewards ----------
+  function renderShare() {
+    const stat = $('#myShareStat'), note = $('#myShareNote');
+    if (!stat) return;
+    if (!wallet || tokBal == null || !mint) {
+      stat.textContent = '—';
+      note.textContent = mint ? 'Connect your wallet in the Trade panel to see your share of each payout.' : 'Once the coin is live, connect your wallet to see your share of each payout.';
+      return;
+    }
+    const pct = supply ? tokBal / supply * 100 : 0;
+    stat.textContent = pct >= 0.01 ? pct.toFixed(2) + '%' : pct > 0 ? '<0.01%' : '0%';
+    const held = mc && supply ? tokBal * mc / supply : 0;
+    if (!tokBal) note.textContent = 'You don’t hold any yet. Hold at least $20 worth to start receiving BTC.';
+    else if (held < 20) note.textContent = `You hold about ${usd(held)}. Hold at least $20 worth to start receiving BTC.`;
+    else {
+      const hourUsd = volumeSince(3600000) * solUsd * 0.03 * pct / 100;
+      note.textContent = hourUsd > 0
+        ? `At the last hour’s trading pace that’s at least ${hourUsd >= 1 ? usd(hourUsd) : '$' + hourUsd.toFixed(2)} in BTC an hour. An estimate, not a promise: payouts depend on trading.`
+        : 'You qualify. Payouts arrive in your wallet as BTC whenever there’s trading.';
+    }
+  }
+
   // ---------- Burns ----------
   function setSupply(n, silent) {
     if (!(n > 0)) return;
@@ -854,6 +958,7 @@
     while (feedEl.children.length > 40) feedEl.lastChild.remove();
   }
   function updateStats() {
+    renderShare();
     const burned = Math.max(0, INITIAL_SUPPLY - supply);
     $('#sBuys').textContent = buys.toLocaleString();
     $('#sSells').textContent = sells.toLocaleString();
@@ -1067,12 +1172,12 @@
   let wallet = null, solBal = null, tokBal = null, trading = false;
   const tradeStatusEl = $('#tradeStatus'), walletBtn = $('#walletBtn'), walletInfo = $('#walletInfo');
 
-  function setTradeStatus(text, kind, link) {
+  function setTradeStatus(text, kind, link, linkText) {
     tradeStatusEl.textContent = text;
     tradeStatusEl.className = 'status' + (kind === 'err' ? ' err' : kind === 'ok' ? ' ok' : '');
     if (link) {
       tradeStatusEl.append(' ');
-      const a = document.createElement('a'); a.href = link; a.target = '_blank'; a.rel = 'noopener'; a.textContent = 'View on Solscan';
+      const a = document.createElement('a'); a.href = link; a.target = '_blank'; a.rel = 'noopener'; a.textContent = linkText || 'View on Solscan';
       tradeStatusEl.append(a);
     }
   }
@@ -1092,6 +1197,7 @@
     });
   }
   function renderWallet() {
+    setTimeout(renderShare);
     if (!wallet) {
       walletBtn.textContent = 'Connect wallet';
       walletInfo.textContent = mint ? 'Connect a Solana wallet to buy and sell right here.' : 'Trading turns on once the coin’s contract address is set.';
@@ -1177,7 +1283,8 @@
     if (!mint || trading) return;
     if (!wallet && !(await connectWallet())) return;
     if (!window.solanaWeb3) { setTradeStatus('The Solana library didn’t load. Check your connection and reload the page.', 'err'); return; }
-    if (action === 'buy' && solBal != null && solBal < amount + 0.003) { setTradeStatus(`Not enough SOL. You have ${fmtNum(solBal)} SOL and this buy needs about ${amount + 0.003} SOL with fees.`, 'err'); return; }
+    const feeEst = siteFeeLamports(action, amount) / 1e9;
+    if (action === 'buy' && solBal != null && solBal < amount + feeEst + 0.003) { setTradeStatus(`Not enough SOL. You have ${fmtNum(solBal)} SOL and this buy needs about ${trim(String(+(amount + feeEst + 0.003).toFixed(4)))} SOL with fees.`, 'err'); return; }
     if (action === 'sell' && tokBal === 0) { setTradeStatus('You don’t hold any of this coin yet, so there’s nothing to sell.', 'err'); return; }
     trading = true; renderQuick();
     try {
@@ -1192,8 +1299,11 @@
         })
       });
       if (res.status !== 200) throw new Error((await res.text()) || 'PumpPortal couldn’t build the trade');
-      const tx = solanaWeb3.VersionedTransaction.deserialize(new Uint8Array(await res.arrayBuffer()));
-      setTradeStatus('Confirm the trade in your wallet…');
+      let tx = solanaWeb3.VersionedTransaction.deserialize(new Uint8Array(await res.arrayBuffer()));
+      const fee = siteFeeLamports(action, amount);
+      let feeAdded = false;
+      if (fee > 0) { try { tx = await addSiteFee(tx, fee); feeAdded = true; } catch (e) { console.warn('Site fee not added:', e); } }
+      setTradeStatus(feeAdded ? `Confirm the trade in your wallet. It includes a ${fmtNum(fee / 1e9)} SOL site fee that goes to the ${SITE_FEE.ticker} burn.` : 'Confirm the trade in your wallet…');
       let sig;
       if (wallet.pv.signAndSendTransaction) {
         const r = await wallet.pv.signAndSendTransaction(tx);
@@ -1208,7 +1318,7 @@
     } catch (e) {
       const msg = String((e && e.message) || e);
       if (/reject|cancel|denied|declined/i.test(msg)) setTradeStatus('Trade cancelled in your wallet.', 'err');
-      else setTradeStatus('The trade didn’t go through: ' + msg.slice(0, 160), 'err');
+      else setTradeStatus('The trade didn’t go through here: ' + msg.slice(0, 140) + '. You can always trade it directly on', 'err', 'https://pump.fun/coin/' + mint, 'pump.fun');
     } finally {
       trading = false; renderQuick();
     }
@@ -1269,8 +1379,44 @@
     instagram: '',              // e.g. 'https://instagram.com/yourcoin'
     youtube: '',                // e.g. 'https://youtube.com/@yourcoin'
     url: 'https://bouldr.fun',  // the link people share
-    burnWallet: ''              // the creator wallet's PUBLIC address (never the private key)
+    launchAt: '2026-10-29T14:00:00-05:00',  // launch time for the countdown (Thursday 2 PM Central); it hides once COIN_MINT is set
+    burnWallet: ''              // the burn wallet's PUBLIC address (never the private key); also receives the 0.5% site fee
   };
+  // ---------- Site fee: a small cut of every trade made on this site goes to the burn wallet ----------
+  // It is only ever used by the burn bot to buy back and burn this site's coin. Leave burnWallet empty to charge nothing.
+  const SITE_FEE = { wallet: SITE.burnWallet, pct: 0.5, ticker: SITE.ticker };
+  const siteFeeOn = () => /^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(SITE_FEE.wallet || '') && SITE_FEE.pct > 0;
+  function siteFeeLamports(action, amount) {
+    if (!siteFeeOn()) return 0;
+    let sol = 0;
+    if (action === 'buy') sol = amount;
+    else if (tokBal && mc && supply && solUsd) sol = tokBal * (amount / 100) * (mc / supply) / solUsd;   // estimated SOL from the sell
+    return Math.floor(sol * 1e9 * SITE_FEE.pct / 100);
+  }
+  // Adds the fee as one more instruction in the same transaction, so it's a single approval and only paid if the trade goes through
+  async function addSiteFee(tx, lamports) {
+    const W3 = solanaWeb3, m = tx.message, alts = [];
+    for (const l of (m.addressTableLookups || [])) {
+      const info = await rpc('getAccountInfo', [l.accountKey.toBase58(), { encoding: 'base64' }]);
+      if (!info || !info.value) throw new Error('lookup table not found');
+      const raw = Uint8Array.from(atob(info.value.data[0]), c => c.charCodeAt(0));
+      alts.push(new W3.AddressLookupTableAccount({ key: l.accountKey, state: W3.AddressLookupTableAccount.deserialize(raw) }));
+    }
+    const tm = W3.TransactionMessage.decompile(m, { addressLookupTableAccounts: alts });
+    // give the transaction a little more compute for the extra transfer
+    tm.instructions.forEach(ix => {
+      if (ix.programId.toBase58() === 'ComputeBudget111111111111111111111111111111' && ix.data[0] === 2 && ix.data.length >= 5) {
+        const units = Math.min(1400000, ((ix.data[1] | ix.data[2] << 8 | ix.data[3] << 16 | ix.data[4] << 24) >>> 0) + 2000);
+        ix.data[1] = units & 255; ix.data[2] = (units >> 8) & 255; ix.data[3] = (units >> 16) & 255; ix.data[4] = (units >>> 24) & 255;
+      }
+    });
+    tm.instructions.push(W3.SystemProgram.transfer({ fromPubkey: tm.payerKey, toPubkey: new W3.PublicKey(SITE_FEE.wallet), lamports }));
+    return new W3.VersionedTransaction(tm.compileToV0Message(alts));
+  }
+  if (siteFeeOn()) {
+    $('#tradeFine').textContent = `Trades are built by PumpPortal (0.5% fee) and signed in your own wallet; this page never sees your keys. Trades here also include a ${SITE_FEE.pct}% site fee that goes to the ${SITE_FEE.ticker} burn wallet and is only ever used to buy back and burn ${SITE_FEE.ticker}. Meme coins are extremely risky. Only trade what you can afford to lose.`;
+  }
+
   if (SITE.burnWallet) {
     const a = $('#burnWalletLink'); a.href = 'https://solscan.io/account/' + SITE.burnWallet; a.textContent = shortAddr(SITE.burnWallet) + ' on Solscan';
     document.querySelectorAll('[data-burn-wallet]').forEach(el => el.hidden = false);
@@ -1315,8 +1461,10 @@
   const shareUrl = () => SITE.url || (location.origin + '/');
   function defaultShareText() {
     return mint && mc
-      ? `Sisyphus is pushing ${SITE.ticker} up the mountain at ${usd(mc)} market cap. Every buy pushes, every sell slides, every burn sets his feet on fire.`
-      : `Every buy pushes the boulder up the mountain. Every sell lets it slide. Come watch ${SITE.ticker}.`;
+      ? `Sisyphus is pushing ${SITE.ticker} up the mountain at ${usd(mc)} market cap. Push the boulder, earn BTC.`
+      : Date.parse(SITE.launchAt || '') > Date.now()
+        ? `${SITE.ticker} fair-launches on pump.fun ${new Date(SITE.launchAt).toLocaleString(undefined, { weekday: 'long', hour: 'numeric', minute: '2-digit', timeZoneName: 'short' })}. Paired with Bitcoin: push the boulder, earn BTC. Try the demo:`
+        : `Every buy pushes the boulder up the mountain. Every sell lets it slide. Come watch ${SITE.ticker}.`;
   }
   function openShare(text, headline, anchor) {
     const menu = $('#shareMenu');
@@ -1386,17 +1534,17 @@
   // `at` is the market cap in USD. After you burn at a step, paste the burn's Solscan link into `tx`
   // and that step shows as burned with a link holders can check.
   const BURN_PLAN = {
-    regular: 'Between milestones, creator fees are also claimed and burned at least once a week. Plans can change; every burn is posted with its transaction.',
+    regular: 'Every burn shows up under Recent burns with its transaction, so you can check each one yourself.',
     steps: [
-      { at: 10_000,     title: 'First burn',          detail: 'Claim all creator fees so far, buy back and burn.', tx: '' },
-      { at: 25_000,     title: 'Burn',                detail: 'Claim creator fees, buy back and burn.', tx: '' },
-      { at: 50_000,     title: 'Burn',                detail: 'Claim creator fees, buy back and burn.', tx: '' },
-      { at: 100_000,    title: 'Six-figure burn',     detail: 'Claim creator fees, buy back and burn.', tx: '' },
-      { at: 250_000,    title: 'Burn',                detail: 'Claim creator fees, buy back and burn.', tx: '' },
-      { at: 500_000,    title: 'Burn',                detail: 'Claim creator fees, buy back and burn.', tx: '' },
-      { at: 1_000_000,  title: 'Million-dollar burn', detail: 'Claim creator fees, buy back and burn.', tx: '' },
-      { at: 5_000_000,  title: 'Burn',                detail: 'Claim creator fees, buy back and burn.', tx: '' },
-      { at: 10_000_000, title: 'Big burn',            detail: 'Claim creator fees, buy back and burn.', tx: '' }
+      { at: 10_000,     title: 'First milestone',     detail: 'The hourly buyback and burn is well underway.', tx: '' },
+      { at: 25_000,     title: 'Burn',                detail: 'Hourly burns keep going past this point.', tx: '' },
+      { at: 50_000,     title: 'Burn',                detail: 'Hourly burns keep going past this point.', tx: '' },
+      { at: 100_000,    title: 'Six-figure burn',     detail: 'Hourly burns keep going past this point.', tx: '' },
+      { at: 250_000,    title: 'Burn',                detail: 'Hourly burns keep going past this point.', tx: '' },
+      { at: 500_000,    title: 'Burn',                detail: 'Hourly burns keep going past this point.', tx: '' },
+      { at: 1_000_000,  title: 'Million-dollar burn', detail: 'Hourly burns keep going past this point.', tx: '' },
+      { at: 5_000_000,  title: 'Burn',                detail: 'Hourly burns keep going past this point.', tx: '' },
+      { at: 10_000_000, title: 'Big burn',            detail: 'Hourly burns keep going past this point.', tx: '' }
     ]
   };
   let lastPlanKey = '';
@@ -1411,7 +1559,7 @@
     BURN_PLAN.steps.forEach((st, i) => {
       let status, cls;
       if (st.tx) { status = 'Burned'; cls = 'done'; }
-      else if (ath >= st.at) { status = 'Reached, burn coming'; cls = 'reached'; }
+      else if (ath >= st.at) { status = 'Reached, still burning'; cls = 'reached'; }
       else if (!nextFound) { status = 'Next'; cls = 'next'; nextFound = true; }
       else { status = 'Planned'; cls = ''; }
       const li = document.createElement('li');
@@ -2843,11 +2991,13 @@
     document.body.classList.add('guest');
     const hide = el => { if (el) el.hidden = true; };
     hide($('#plan')); document.querySelectorAll('a[href="#plan"]').forEach(hide);
+    hide($('#rewards')); document.querySelectorAll('a[href="#rewards"]').forEach(hide);
     document.querySelectorAll('[data-burn-wallet]').forEach(hide);
     if (burns) $('#burnText').textContent = 'This coin burns supply. Every burn sets his feet on fire and shrinks the mountain, and the numbers here update live from the chain.';
     else { hide($('#burn')); document.querySelectorAll('a[href="#burn"]').forEach(hide); }
+    const earn = document.querySelector('h1 .earn'); if (earn) earn.remove();
     $('#heroText').textContent = 'Every buy of this coin pushes Sisyphus up the mountain and every sell lets the boulder slide back' + (burns ? ', and every burn sets his feet on fire.' : '.') + ' He never reaches the top.';
-    ['x', 'telegram', 'discord', 'tiktok', 'instagram', 'youtube', 'burnWallet'].forEach(k => SITE[k] = '');
+    ['x', 'telegram', 'discord', 'tiktok', 'instagram', 'youtube', 'burnWallet', 'launchAt'].forEach(k => SITE[k] = '');
     SITE.url = location.origin + location.pathname + location.search;
     const applyName = (ticker, name) => {
       SITE.ticker = ticker; SITE.name = name || ticker;
@@ -2864,6 +3014,68 @@
   }
   const guestMint = params.get('mint');
   if (guestMint && guestMint !== COIN_MINT && /^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(guestMint)) setupGuestPage(guestMint, params.get('burns') === '1');
+
+  // ---------- Launch countdown (shown until COIN_MINT is set) ----------
+  function setupCountdown() {
+    const at = Date.parse(SITE.launchAt || '');
+    if (!at || COIN_MINT || document.body.classList.contains('guest')) return;
+    $('#countdown').hidden = false;
+    const when = new Date(at).toLocaleString(undefined, { weekday: 'long', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', timeZoneName: 'short' });
+    $('#cdLabel').textContent = SITE.ticker + ' launches on pump.fun ' + when;
+    const alertUrl = SITE.telegram || SITE.x;
+    if (alertUrl) { const a = $('#cdAlert'); a.href = alertUrl; a.hidden = false; }
+    document.querySelectorAll('[data-ca-soon]').forEach(el => el.textContent = 'Contract address drops at launch');
+    const t = $('#cdTime');
+    const tick = () => {
+      const s = Math.max(0, Math.floor((at - Date.now()) / 1000));
+      if (!s) { t.textContent = 'Launching any minute'; return; }
+      t.textContent = '';
+      const parts = [[Math.floor(s / 86400), 'd'], [Math.floor(s % 86400 / 3600), 'h'], [Math.floor(s % 3600 / 60), 'm'], [s % 60, 's']];
+      parts.forEach(([v, u], i) => {
+        if (i === 0 && !v) return;
+        t.append(i && (i > 1 || parts[0][0]) ? String(v).padStart(2, '0') : String(v));
+        t.append(Object.assign(document.createElement('span'), { textContent: u }));
+      });
+      setTimeout(tick, 1000 - (Date.now() % 1000));
+    };
+    tick();
+    $('#cdCal').onclick = () => {
+      const stamp = d => new Date(d).toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
+      const site = SITE.url || location.origin;
+      const ics = ['BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//Boulder//Launch//EN', 'BEGIN:VEVENT',
+        'UID:launch-' + at + '@' + site.replace(/^https?:\/\//, ''), 'DTSTAMP:' + stamp(Date.now()), 'DTSTART:' + stamp(at), 'DTEND:' + stamp(at + 30 * 60000),
+        'SUMMARY:' + SITE.ticker + ' launches on pump.fun', 'DESCRIPTION:Watch the boulder go live at ' + site, 'URL:' + site,
+        'BEGIN:VALARM', 'TRIGGER:-PT10M', 'ACTION:DISPLAY', 'DESCRIPTION:' + SITE.ticker + ' launches in 10 minutes', 'END:VALARM',
+        'END:VEVENT', 'END:VCALENDAR'].join('\r\n');
+      const a = document.createElement('a'); a.href = URL.createObjectURL(new Blob([ics], { type: 'text/calendar' }));
+      a.download = 'boulder-launch.ics'; a.click(); setTimeout(() => URL.revokeObjectURL(a.href), 4000);
+    };
+  }
+  setupCountdown();
+
+  // ---------- Burn bot history (this site's own coin only) ----------
+  async function loadBurns() {
+    if (document.body.classList.contains('guest') || inPreview || !/^https?:$/.test(location.protocol)) return;
+    try {
+      const d = await fetch('/api/burns', { cache: 'no-store' }).then(r => r.json());
+      if (!d || !Array.isArray(d.burns) || !d.burns.length) return;
+      const ago = t => { const s = (Date.now() - Date.parse(t)) / 1000; return s < 3600 ? Math.max(1, Math.round(s / 60)) + 'm ago' : s < 86400 ? Math.round(s / 3600) + 'h ago' : Math.round(s / 86400) + 'd ago'; };
+      const list = $('#burnList'); list.textContent = '';
+      d.burns.slice(0, 8).forEach(b => {
+        const li = document.createElement('li');
+        const what = document.createElement('span');
+        what.append('Burned ', Object.assign(document.createElement('b'), { textContent: compact(b.burned || 0) }), ` tokens with ${fmtSol(b.spentSol || 0)} SOL of site fees`);
+        const when = document.createElement('span'); when.textContent = ago(b.time);
+        if (/^[1-9A-HJ-NP-Za-km-z]{60,100}$/.test(b.burnSig || '')) {
+          when.append(' · ', Object.assign(document.createElement('a'), { href: 'https://solscan.io/tx/' + b.burnSig, target: '_blank', rel: 'noopener', textContent: 'View' }));
+        }
+        li.append(what, when); list.append(li);
+      });
+      $('#burnBotNote').textContent = compact(d.totals.burned) + ' burned so far, automatically every hour';
+      $('#burnFeed').hidden = false;
+    } catch (e) { /* no burn history yet */ }
+  }
+  loadBurns(); setInterval(loadBurns, 120000);
 
   let startMint = params.get('mint') || COIN_MINT;
   if (startMint && !inPreview) { $('#mint').value = startMint; goLive(startMint); }
