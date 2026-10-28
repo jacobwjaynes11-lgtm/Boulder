@@ -2004,7 +2004,7 @@
     return { F, hip, sh, bx, by };
   }
   // Palms sit on the lower, downhill side of the boulder (angle measured from its centre), so her arms drive up into it
-  const PALM_F = 2.25, PALM_B = 2.05;
+  const PALM_F = 2.55, PALM_B = 2.38;   // hands sit higher on the boulder's back, so she stands more upright
   function palmPoint(c, a) {
     // keep the palms on the same spot of the slope even as the boulder rolls
     const f = frameAt(boulderS()), slopeA = Math.atan2(f.ty, f.tx);
@@ -2025,12 +2025,12 @@
   function updateClimber(dt, ds) {
     if (L <= 1) return;
     const speed = Math.abs(ds) / Math.max(dt, 1e-4); // px per second along the slope
-    let leanTarget = moving === 1 ? 0.34 + Math.min(1, pose.pulse) * 0.06 : moving === -1 ? 0.5 : 0.28;
+    let leanTarget = moving === 1 ? 0.22 + Math.min(1, pose.pulse) * 0.05 : moving === -1 ? 0.36 : 0.15;
     // Mighty heave: sink low, then explode forward
     const ht = power.heaveT;
     if (ht >= 0) leanTarget += ht < 0.32 ? 0.16 * (ht / 0.32) : -0.08 * Math.max(0, 1 - (ht - 0.32) / 0.6);
     // Super strength: stands tall and pushes like it weighs nothing
-    leanTarget += ((moving === 1 ? 0.24 : 0.16) - leanTarget) * power.superLevel;
+    leanTarget += ((moving === 1 ? 0.16 : 0.1) - leanTarget) * power.superLevel;
     pose.lean += (leanTarget - pose.lean) * Math.min(1, dt * (ht >= 0 ? 12 : 5));
     const sF = solveFeet(pose.lean);
     pose.sF = sF; footS = sF;
