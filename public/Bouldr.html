@@ -1998,7 +1998,7 @@
   function bodyFrame(s, lean, c) {
     const bx = Math.sin(lean), by = -Math.cos(lean);
     const F = frameAt(s);
-    const hip = { x: F.x + F.tx * U * 0.3, y: F.y + F.ty * U * 0.3 - U * 1.0 };
+    const hip = { x: F.x + F.tx * U * 0.3, y: F.y + F.ty * U * 0.3 - U * 0.88 };
     const sh = { x: hip.x + bx * TORSO(), y: hip.y + by * TORSO() };
     return { F, hip, sh, bx, by };
   }
@@ -2036,7 +2036,7 @@
     const S = STEP();
 
     if (!pose.feet || Math.abs(pose.feet[0].u * L - sF) > S * 4 || Math.abs(pose.feet[1].u * L - sF) > S * 4) {
-      pose.feet = [{ u: (sF - S * 0.45) / L, lift: 0, sw: null }, { u: (sF + S * 0.35) / L, lift: 0, sw: null }];
+      pose.feet = [{ u: (sF - S * 0.3) / L, lift: 0, sw: null }, { u: (sF + S * 0.2) / L, lift: 0, sw: null }];
     }
     const feet = pose.feet;
 
@@ -2044,7 +2044,7 @@
       // Braced and skidding: both feet dragged back with the body
       feet.forEach((f, i) => {
         f.sw = null; f.lift *= 0.8;
-        const want = sF + (i === 0 ? -S * 0.65 : S * 0.45);
+        const want = sF + (i === 0 ? -S * 0.4 : S * 0.25);
         f.u += (want / L - f.u) * Math.min(1, dt * 10);
       });
     } else {
@@ -2058,7 +2058,7 @@
         const rear = feet[0].u <= feet[1].u ? feet[0] : feet[1];
         const front = rear === feet[0] ? feet[1] : feet[0];
         const behind = sF - rear.u * L, ahead = front.u * L - sF;
-        const need = moving === 1 ? behind > S * 0.62 : (behind > S * 1.1 || ahead > S * 1.4 || -behind > S * 0.6);
+        const need = moving === 1 ? behind > S * 0.45 : (behind > S * 0.8 || ahead > S * 1.0 || -behind > S * 0.45);
         if (need) {
           const dur = moving === 1 ? Math.max(0.16, Math.min(0.36, (S * 1.4) / Math.max(speed, 1))) : 0.38;
           rear.sw = { from: rear.u * L, t: 0, dur };
@@ -2075,7 +2075,7 @@
         f.sw.t += dt / f.sw.dur;
         const k = Math.min(1, f.sw.t);
         const e = k < 0.5 ? 2 * k * k : 1 - ((-2 * k + 2) ** 2) / 2;
-        const to = sF + S * (moving === 1 ? 0.55 : 0.35);
+        const to = sF + S * (moving === 1 ? 0.3 : 0.2);
         f.u = (f.sw.from + (to - f.sw.from) * e) / L;
         f.lift = Math.sin(Math.PI * k) * U * (moving === 1 ? 0.28 : 0.14);
         if (k >= 1) { f.sw = null; f.lift = 0; }
@@ -2107,7 +2107,7 @@
     const light = css(mixc('#a06a44', '#e0a066', p));
     const hair = '#1e1410', cloth = css(mixc('#3a2a24', '#5a3f2e', p));
     const LX = 0.55, LY = -0.83;                                // light direction (up and toward the sun)
-    const THIGH = U * 0.62, SHIN = U * 0.6;
+    const THIGH = U * 0.74, SHIN = U * 0.72;   // long enough that both feet stay planted on the slope
 
     // Muscled limb: a tapered bone with a muscle belly; shadow pass, then a lit pass nudged toward the light
     function muscle(a, b, w1, w2, base, hi, bulge = 0) {
@@ -2406,13 +2406,13 @@
     const crouch = ht < 0 ? 0 : ht < 0.32 ? U * 0.18 * (ht / 0.32) : U * 0.18 * Math.max(0, 1 - (ht - 0.32) / 0.2);
     let hip = { x: fr.hip.x + bx * pose.pulse * U * 0.05, y: fr.hip.y + crouch - pose.pulse * U * 0.03 - power.superLevel * U * 0.05 };
     let sh = { x: hip.x + bx * TORSO(), y: hip.y + by * TORSO() };
-    const THIGH = U * 0.62, SHIN = U * 0.6;
+    const THIGH = U * 0.74, SHIN = U * 0.72;   // long enough that both feet stay planted on the slope
     // The planted back foot pushes off: heel rises and the leg drives, toes stay on the ground
     const rearIdx = pose.feet[0].u <= pose.feet[1].u ? 0 : 1, Sst = STEP();
     const feet = pose.feet.map((f, i) => {
       const q = frameAt(f.u * L);
       const push = !f.sw && i === rearIdx && moving === 1 ? Math.max(0, Math.min(1, ((pose.sF - f.u * L) / Sst - 0.15) * 1.8)) : 0;
-      return { x: q.x + q.nx * U * (0.1 + push * 0.16), y: q.y + q.ny * U * (0.1 + push * 0.16) - f.lift, u: f.u, push, q };
+      return { x: q.x + q.nx * U * (0.04 + push * 0.1), y: q.y + q.ny * U * (0.04 + push * 0.1) - f.lift, u: f.u, push, q };
     });
     let legs = feet.map(ft => { const s = ik(hip, ft, THIGH, SHIN, -1); return { knee: s.joint, ft: s.end }; });
     let back = 0;   // leg 0 is always the far leg and leg 1 the near one, so you can see both legs take turns stepping
@@ -2488,12 +2488,11 @@
     const faceAng = Math.atan2(hdy, hdx);
     // far leg (in shadow) with a sneaker
     // where each sneaker's toe goes: flat on the ground, or tipped onto the toes while pushing off
-    // The sneaker is always the same length, measured from the ankle: flat along the slope when planted,
-    // tipped down onto the toes while pushing off (it used to stretch to a fixed spot on the ground, which elongated it)
+    // Bare feet, always the same length from the ankle: flat on the rock when planted, up on the toes while pushing off
     const toeOf = i => {
       const f = feet[i], ft = legs[i].ft;
-      if (flight.active || !f || !f.q) return { x: ft.x + U * 0.22, y: ft.y + U * 0.04 };
-      const tilt = (f.push || 0) * 0.85, len = U * 0.24, q = f.q;
+      if (flight.active || !f || !f.q) return { x: ft.x + U * 0.15, y: ft.y + U * 0.03 };
+      const tilt = (f.push || 0) * 0.7, len = U * 0.17, q = f.q;
       return { x: ft.x + (q.tx * Math.cos(tilt) - q.nx * Math.sin(tilt)) * len, y: ft.y + (q.ty * Math.cos(tilt) - q.ny * Math.sin(tilt)) * len };
     };
     // shorts: each leg opening wraps around the top of the thigh, so they move with her legs
@@ -2504,7 +2503,7 @@
       line({ x: b.x - nx * 1.05, y: b.y - ny * 1.05 }, { x: b.x + nx * 1.05, y: b.y + ny * 1.05 }, 1, COL.jacketDark);   // hem
     };
     thick(hip, legs[back].knee, 3, COL.skinShade); thick(legs[back].knee, legs[back].ft, 2, COL.skinShade);
-    line(legs[back].ft, toeOf(back), 2, COL.shoe);
+    line(legs[back].ft, toeOf(back), 2, COL.skinShade);   // bare foot
     shortsLeg(legs[back].knee, COL.jacketDark);
     // far arm in its jacket sleeve, hand showing
     thick(sh, armB.joint, 2, COL.jacketDark); thick(armB.joint, off(armB.end, 0, 0), 2, COL.jacketDark);
@@ -2527,8 +2526,7 @@
     thick(hip, legs[1 - back].knee, 3, COL.skin); thick(legs[1 - back].knee, legs[1 - back].ft, 2, COL.skin);
     line(off(hip, U * 0.04, -U * 0.22), off(legs[1 - back].knee, U * 0.04, 0), 1, COL.skinLight);
     const nf = legs[1 - back].ft;
-    line(nf, toeOf(1 - back), 2, COL.shoe);
-    put(Math.round(G(nf).x) + 1, Math.round(G(nf).y) + 2, COL.sole);
+    line(nf, toeOf(1 - back), 2, COL.skin);   // bare foot
     shortsLeg(legs[1 - back].knee, COL.top);
     line(off(hip, -HPW * 1.1, U * 0.13), off(hip, WAW * 1.25, U * 0.13), 1, COL.lining);                 // orange waistband
     // head: face, a big sweep of orange hair, bangs and a gold eye
