@@ -2441,9 +2441,12 @@
     }
 
     const gold = power.superLevel > 0.3 && Math.floor(time / 90) % 3 !== 0;
+    // The Boulder Holder: orange hair, gold eyes, black Bitcoin crop top, dark jacket with a fur collar
     const COL = gold
-      ? { dark: '#b86f50', skin: '#feae34', light: '#fee761', hair: '#733e39', cloth: '#be4a2f', foot: '#733e39' }
-      : { dark: '#733e39', skin: '#b86f50', light: '#e4a672', hair: '#3e2731', cloth: '#3e2731', foot: '#181425' };
+      ? { skin: '#fee761', skinShade: '#feae34', skinLight: '#ffffff', hair: '#feae34', hairShade: '#f77622', hairLight: '#fee761',
+          top: '#733e39', jacket: '#b86f50', jacketDark: '#733e39', lining: '#fee761', fur: '#ffffff', shoe: '#fee761', sole: '#f77622', mark: '#ffffff', eye: '#ffffff' }
+      : { skin: '#e4a672', skinShade: '#b86f50', skinLight: '#ead4aa', hair: '#f77622', hairShade: '#be4a2f', hairLight: '#feae34',
+          top: '#262b44', jacket: '#3a4466', jacketDark: '#262b44', lining: '#f77622', fur: '#c0cbdc', shoe: '#c0cbdc', sole: '#f77622', mark: '#feae34', eye: '#fee761' };
 
     // Rasterise onto the low-res grid
     const cells = new Map();
@@ -2474,30 +2477,58 @@
     };
     const thick = (a, b, w, col) => line(a, b, w, col);
     const off = (pt, k1, k2) => ({ x: pt.x + px * k1 + bx * k2, y: pt.y + py * k1 + by * k2 });
-    // far leg (shadow), heel to toe
-    thick(hip, legs[back].knee, 3, COL.dark); thick(legs[back].knee, legs[back].ft, 2, COL.dark);
-    line(legs[back].ft, { x: legs[back].ft.x + U * 0.22, y: legs[back].ft.y + U * 0.04 }, 2, COL.foot);
-    // far arm (shadow)
-    thick(sh, armB.joint, 2, COL.dark); thick(armB.joint, armB.end, 2, COL.dark);
-    // torso: broad back and shoulders tapering to the waist
-    const SHW = U * 0.36, WAW = U * 0.16;
-    fillPoly([off(sh, -SHW, 0), off(sh, SHW, 0), off(hip, WAW, 0), off(hip, -WAW * 1.1, 0)], COL.skin);
-    line(off(sh, SHW * 0.7, -U * 0.05), off(hip, WAW * 0.6, U * 0.1), 1, COL.light);      // lit chest edge
-    line(off(sh, -SHW * 0.75, -U * 0.08), off(hip, -WAW * 0.9, U * 0.12), 1, COL.dark);  // shaded back
-    // loincloth
-    fillPoly([off(hip, -WAW * 1.3, U * 0.12), off(hip, WAW * 1.25, U * 0.12), off(hip, WAW * 1.1, -U * 0.16), off(hip, -WAW * 1.4, -U * 0.14)], COL.cloth);
+    const T = TORSO();
+    const hx = gx(head.x), hy = gy(head.y), hr = Math.max(2, Math.round(U * 0.2 / pxs));
+    const faceAng = Math.atan2(hdy, hdx);
+    // far leg (in shadow) with a sneaker
+    thick(hip, legs[back].knee, 3, COL.skinShade); thick(legs[back].knee, legs[back].ft, 2, COL.skinShade);
+    line(legs[back].ft, { x: legs[back].ft.x + U * 0.22, y: legs[back].ft.y + U * 0.04 }, 2, COL.shoe);
+    // far arm in its jacket sleeve, hand showing
+    thick(sh, armB.joint, 2, COL.jacketDark); thick(armB.joint, off(armB.end, 0, 0), 2, COL.jacketDark);
+    put(Math.round(G(armB.end).x), Math.round(G(armB.end).y), COL.skinShade);
+    // torso: slimmer, black crop top over the chest, bare midriff, dark shorts
+    const SHW = U * 0.28, WAW = U * 0.14, HPW = U * 0.19;
+    fillPoly([off(sh, -SHW, 0), off(sh, SHW * 0.95, 0), off(hip, WAW, 0), off(hip, -HPW, 0)], COL.skin);
+    line(off(sh, -SHW * 0.7, -U * 0.08), off(hip, -WAW, U * 0.1), 1, COL.skinShade);                    // shaded back
+    fillPoly([off(sh, -SHW * 1.05, U * 0.03), off(sh, SHW * 1.0, U * 0.03), off(sh, SHW * 1.12, -T * 0.3),
+              off(sh, SHW * 0.8, -T * 0.66), off(sh, -SHW * 0.95, -T * 0.64)], COL.top);                  // crop top
+    line(off(sh, SHW * 0.7, -T * 0.66), off(sh, -SHW * 0.9, -T * 0.64), 1, COL.lining);                  // orange trim
+    const mk = G(off(sh, SHW * 0.4, -T * 0.32)), mx = Math.round(mk.x), my = Math.round(mk.y);       // the ₿ on her top
+    put(mx, my - 1, COL.mark); put(mx, my, COL.mark); put(mx, my + 1, COL.mark); put(mx + 1, my - 1, COL.mark); put(mx + 1, my + 1, COL.mark);
+    fillPoly([off(hip, -HPW * 1.15, U * 0.14), off(hip, WAW * 1.3, U * 0.14), off(hip, WAW * 1.35, -U * 0.26), off(hip, -HPW * 1.25, -U * 0.24)], COL.top);
+    line(off(hip, -HPW * 1.1, U * 0.13), off(hip, WAW * 1.25, U * 0.13), 1, COL.lining);                 // waistband
+    // long orange hair falling down her back
+    thick(off(head, -U * 0.12, 0), off(sh, -U * 0.42, -T * 0.55), 3, COL.hairShade);
+    thick(off(head, -U * 0.04, U * 0.04), off(sh, -U * 0.36, -T * 0.3), 3, COL.hair);
+    line(off(head, -U * 0.02, U * 0.08), off(sh, -U * 0.3, -T * 0.1), 1, COL.hairLight);
     // near leg
     thick(hip, legs[1 - back].knee, 3, COL.skin); thick(legs[1 - back].knee, legs[1 - back].ft, 2, COL.skin);
-    line(off(hip, U * 0.04, 0), off(legs[1 - back].knee, U * 0.04, 0), 1, COL.light);
-    line(legs[1 - back].ft, { x: legs[1 - back].ft.x + U * 0.22, y: legs[1 - back].ft.y + U * 0.04 }, 2, COL.foot);
-    // near arm
-    thick(sh, armF.joint, 2, COL.skin); thick(armF.joint, armF.end, 2, COL.light);
-    put(Math.round(G(armF.end).x), Math.round(G(armF.end).y) - 1, COL.light);
-    // head between the raised arms, hair on the back
-    const hx = gx(head.x), hy = gy(head.y), hr = Math.max(2, Math.round(U * 0.2 / pxs));
-    blob(hx, hy, hr, COL.skin);
-    put(hx + Math.round(px * hr * 0.6), hy + Math.round(py * hr * 0.6), COL.light);
-    for (let a = -1.9; a <= 1.0; a += 0.35) put(hx + Math.round(Math.cos(Math.atan2(hdy, hdx) + Math.PI + a) * hr), hy + Math.round(Math.sin(Math.atan2(hdy, hdx) + Math.PI + a) * hr), COL.hair);
+    line(off(hip, U * 0.04, -U * 0.22), off(legs[1 - back].knee, U * 0.04, 0), 1, COL.skinLight);
+    const nf = legs[1 - back].ft;
+    line(nf, { x: nf.x + U * 0.24, y: nf.y + U * 0.04 }, 2, COL.shoe);
+    put(Math.round(G(nf).x) + 1, Math.round(G(nf).y) + 2, COL.sole);
+    // head: face, a big sweep of orange hair, bangs and a gold eye
+    blob(hx + Math.round(-Math.cos(faceAng) * 1.4), hy + Math.round(-Math.sin(faceAng) * 1.4), hr + 1, COL.hair);   // big mane of hair
+    blob(hx + Math.round(-Math.cos(faceAng) * 2), hy + Math.round(-Math.sin(faceAng) * 2), hr, COL.hairShade);
+    blob(hx + Math.round(Math.cos(faceAng) * 1.2), hy + Math.round(Math.sin(faceAng) * 1.2), Math.max(1, hr - 1), COL.skin);   // face at the front
+    for (let a = -2.6; a <= 2.6; a += 0.25) {                                                                       // hair all round except the face
+      if (Math.abs(a) < 1.2) continue;
+      put(hx + Math.round(Math.cos(faceAng + Math.PI + a) * (hr + 1)), hy + Math.round(Math.sin(faceAng + Math.PI + a) * (hr + 1)), COL.hair);
+    }
+    put(hx + Math.round(-Math.cos(faceAng) * 0.5), hy + Math.round(-Math.sin(faceAng) * 0.5) - 1, COL.hairLight);   // shine
+    const bang = faceAng - 1.2;                                                                                // bangs over the brow
+    put(hx + Math.round(Math.cos(bang) * hr), hy + Math.round(Math.sin(bang) * hr), COL.hairLight);
+    put(hx + Math.round(Math.cos(bang - 0.4) * hr), hy + Math.round(Math.sin(bang - 0.4) * hr), COL.hair);
+    put(hx + Math.round(Math.cos(faceAng - 0.25) * (hr - 1)), hy + Math.round(Math.sin(faceAng - 0.25) * (hr - 1)), COL.eye);
+    // near arm in the jacket sleeve with orange lining at the cuff, hand on the boulder
+    thick(sh, armF.joint, 2, COL.jacket); thick(armF.joint, armF.end, 2, COL.jacket);
+    const cuff = { x: armF.joint.x + (armF.end.x - armF.joint.x) * 0.8, y: armF.joint.y + (armF.end.y - armF.joint.y) * 0.8 };
+    put(Math.round(G(cuff).x), Math.round(G(cuff).y), COL.lining);
+    put(Math.round(G(armF.end).x), Math.round(G(armF.end).y), COL.skin); put(Math.round(G(armF.end).x), Math.round(G(armF.end).y) - 1, COL.skinLight);
+    // jacket hanging off the shoulders, with the fur collar
+    fillPoly([off(sh, -SHW * 1.15, U * 0.05), off(sh, -SHW * 0.2, U * 0.06), off(sh, -SHW * 0.6, -T * 0.6), off(sh, -SHW * 1.3, -T * 0.55)], COL.jacket);
+    line(off(sh, -SHW * 0.55, -T * 0.05), off(sh, -SHW * 0.62, -T * 0.55), 1, COL.lining);
+    line(off(sh, -SHW * 1.2, U * 0.06), off(sh, SHW * 0.1, U * 0.08), 2, COL.fur);
 
     // Outline: every empty neighbour of a filled pixel
     const outline = [];
