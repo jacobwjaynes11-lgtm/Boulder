@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Push the Boulder</title>
-<meta name="description" content="A meme coin with a game strapped to it: every buy pushes Sisyphus up the mountain, every sell slides him back, and creator fees burn the supply.">
+<meta name="description" content="A meme coin paired with Bitcoin, with a game strapped to it: every buy pushes The Boulder Holders up the mountain, every sell lets the boulder slide back, and 3% of every trade is paid to holders in BTC.">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -318,7 +318,7 @@
 
 <div class="hero" id="top">
   <h1>Push the boulder. <span class="earn">Earn BTC.</span></h1>
-  <p id="heroText"><span data-site="name">Boulder</span> is a meme coin paired with Bitcoin, with a game strapped to it. Every buy pushes Sisyphus up the mountain, every sell lets the boulder slide back, and 3% of every trade is paid to holders in BTC. He never reaches the top. That’s the point.</p>
+  <p id="heroText"><span data-site="name">Boulder</span> is a meme coin paired with Bitcoin, with a game strapped to it. Every buy pushes The Boulder Holders up the mountain, every sell lets the boulder slide back, and 3% of every trade is paid to holders in BTC. They never reach the top. That’s the point.</p>
   <div class="cta">
     <a class="btn buy-link" href="#buy" target="_blank" rel="noopener">Buy <span data-site="ticker">$BOULDER</span></a>
     <span class="ca-chip" data-ca-wrap hidden>CA <code data-ca></code><button class="ghost small" data-copy-ca>Copy</button></span>
@@ -843,8 +843,8 @@
     flight.mode = kind === 'break' ? 'superman' : 'carry'; flight.smash = kind === 'break' ? 0.5 : 0; flight.smashed = false; flight.dropT = 0;
     power.heaveT = -1;
     if (flight.mode === 'superman') Sound.windup(); else Sound.launch(flight.dur);
-    if (kind === 'break') shareMoment(`A buy so big Sisyphus smashed through his boulder and flew ${SITE.ticker} to ${usd(destMc)}!`, 'BREAKTHROUGH!');
-    else if (kind === 'whale') shareMoment(`A whale just launched ${SITE.ticker} to ${usd(destMc)}. Sisyphus is flying!`, 'Whale!');
+    if (kind === 'break') shareMoment(`A buy so big The Boulder Holders smashed straight through the boulder and flew ${SITE.ticker} to ${usd(destMc)}!`, 'BREAKTHROUGH!');
+    else if (kind === 'whale') shareMoment(`A whale just launched ${SITE.ticker} to ${usd(destMc)}. The Boulder Holders are flying!`, 'Whale!');
     const b = boulderCenter();
     floaters.push({ x: W * 0.5, y: H * 0.26, screen: true, life: 2.4, text: (kind === 'break' ? 'BREAKTHROUGH! ' : kind === 'whale' ? 'Whale! ' : 'Soaring! ') + 'Flying to ' + usd(destMc), color: '#fee761', size: 26 });
     rings.push({ x: b.x, y: b.y + R, r: R * 0.8, life: 1.2, big: true });
@@ -1461,7 +1461,7 @@
   const shareUrl = () => SITE.url || (location.origin + '/');
   function defaultShareText() {
     return mint && mc
-      ? `Sisyphus is pushing ${SITE.ticker} up the mountain at ${usd(mc)} market cap. Push the boulder, earn BTC.`
+      ? `The Boulder Holders are pushing ${SITE.ticker} up the mountain at ${usd(mc)} market cap. Push the boulder, earn BTC.`
       : Date.parse(SITE.launchAt || '') > Date.now()
         ? `${SITE.ticker} fair-launches on pump.fun ${new Date(SITE.launchAt).toLocaleString(undefined, { weekday: 'long', hour: 'numeric', minute: '2-digit', timeZoneName: 'short' })}. Paired with Bitcoin: push the boulder, earn BTC. Try the demo:`
         : `Every buy pushes the boulder up the mountain. Every sell lets it slide. Come watch ${SITE.ticker}.`;
@@ -2561,7 +2561,7 @@
     const m = crossed[crossed.length - 1];
     if (!m) return;
     Sound.milestone();
-    shareMoment(`Sisyphus just pushed ${SITE.ticker} past ${usd(m)} market cap!`, usd(m) + ' reached!');
+    shareMoment(`The Boulder Holders just pushed ${SITE.ticker} past ${usd(m)} market cap!`, usd(m) + ' reached!');
     if (!W) return;
     floaters.push({ x: W * 0.5, y: H * 0.36, screen: true, life: 3.2, text: usd(m) + ' reached!', color: '#fee761', size: 34 });
     flashT = 0.32;
@@ -2996,7 +2996,7 @@
     if (burns) $('#burnText').textContent = 'This coin burns supply. Every burn sets his feet on fire and shrinks the mountain, and the numbers here update live from the chain.';
     else { hide($('#burn')); document.querySelectorAll('a[href="#burn"]').forEach(hide); }
     const earn = document.querySelector('h1 .earn'); if (earn) earn.remove();
-    $('#heroText').textContent = 'Every buy of this coin pushes Sisyphus up the mountain and every sell lets the boulder slide back' + (burns ? ', and every burn sets his feet on fire.' : '.') + ' He never reaches the top.';
+    $('#heroText').textContent = 'Every buy of this coin pushes The Boulder Holders up the mountain and every sell lets the boulder slide back' + (burns ? ', and every burn sets their feet on fire.' : '.') + ' They never reach the top.';
     ['x', 'telegram', 'discord', 'tiktok', 'instagram', 'youtube', 'burnWallet', 'launchAt'].forEach(k => SITE[k] = '');
     SITE.url = location.origin + location.pathname + location.search;
     const applyName = (ticker, name) => {
