@@ -1,8 +1,9 @@
 {
   // Cloudflare settings for the Push the Boulder website.
-  //   public/        the website
-  //   src/worker.js  live coin data (/api/live) and Solana access (/api/rpc)
-  // Needs a secret named RPC_URL (your Helius link) in the Cloudflare dashboard.
+  //   public/          the website
+  //   src/worker.js    live coin data (/api/live), Solana access (/api/rpc), burn history (/api/burns)
+  //   src/burnbot.js   the hourly burn bot
+  // Secrets (add in the Cloudflare dashboard, never here): RPC_URL (your Helius link), BURN_KEY (the burn wallet's private key)
   "name": "boulder",
   "main": "src/worker.js",
   "compatibility_date": "2026-10-23",
@@ -10,11 +11,30 @@
     "directory": "./public",
     "binding": "ASSETS"
   },
-  // One shared live tracker per coin
   "durable_objects": {
-    "bindings": [{ "name": "LIVE", "class_name": "LiveCoin" }]
+    "bindings": [
+      { "name": "LIVE", "class_name": "LiveCoin" },
+      { "name": "BURNS", "class_name": "BurnLog" }
+    ]
   },
   "migrations": [
-    { "tag": "v1", "new_sqlite_classes": ["LiveCoin"] }
-  ]
+    { "tag": "v1", "new_sqlite_classes": ["LiveCoin"] },
+    { "tag": "v2", "new_sqlite_classes": ["BurnLog"] }
+  ],
+  // The burn bot runs at the top of every hour
+  "triggers": { "crons": ["0 * * * *"] },
+  // Burn bot settings. It does nothing until BURN_MINT is set and the BURN_KEY secret exists.
+  "vars": {
+    "BURN_MINT": "",                 // your coin's contract address
+    "BURN_PAUSED": "0",              // "1" stops the bot
+    "BURN_SPEND_ALL": "1",           // "1" = burn everything above the reserve, including the 0.5% site fee. ONLY for a wallet that holds nothing but fees
+    "BURN_MIN_CLAIM_SOL": "0.005",   // skip claiming when less than this is waiting
+    "BURN_MIN_BUY_SOL": "0.01",      // smaller amounts add up until the next run
+    "BURN_GAS_SOL": "0.001",         // kept back from each run's fees for network fees
+    "BURN_RESERVE_SOL": "0.02",      // the wallet never goes below this
+    "BURN_MAX_BUY_SOL": "25",        // largest single buyback
+    "BURN_SLIPPAGE_PCT": "15",
+    "BURN_PRIORITY_FEE_SOL": "0.00005",
+    "BURN_EXTRA_PROGRAMS": ""        // extra program IDs the bot may sign for, comma separated (leave empty)
+  }
 }
