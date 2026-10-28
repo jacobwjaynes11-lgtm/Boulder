@@ -2488,10 +2488,13 @@
     const faceAng = Math.atan2(hdy, hdx);
     // far leg (in shadow) with a sneaker
     // where each sneaker's toe goes: flat on the ground, or tipped onto the toes while pushing off
+    // The sneaker is always the same length, measured from the ankle: flat along the slope when planted,
+    // tipped down onto the toes while pushing off (it used to stretch to a fixed spot on the ground, which elongated it)
     const toeOf = i => {
       const f = feet[i], ft = legs[i].ft;
-      if (!flight.active && f && f.push > 0.05) return { x: f.q.x + f.q.tx * U * 0.26 + f.q.nx * U * 0.03, y: f.q.y + f.q.ty * U * 0.26 + f.q.ny * U * 0.03 };
-      return { x: ft.x + U * 0.22, y: ft.y + U * 0.04 };
+      if (flight.active || !f || !f.q) return { x: ft.x + U * 0.22, y: ft.y + U * 0.04 };
+      const tilt = (f.push || 0) * 0.85, len = U * 0.24, q = f.q;
+      return { x: ft.x + (q.tx * Math.cos(tilt) - q.nx * Math.sin(tilt)) * len, y: ft.y + (q.ty * Math.cos(tilt) - q.ny * Math.sin(tilt)) * len };
     };
     // shorts: each leg opening wraps around the top of the thigh, so they move with her legs
     const shortsLeg = (knee, col) => {
