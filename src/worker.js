@@ -90,7 +90,9 @@ export class LiveCoin {
   async alarm() {
     await this.load();
     if (Date.now() - this.lastView > IDLE_STOP_MS) return;   // nobody watching: stop polling (and stop using credits)
+    this.fromAlarm = true;
     await this.refreshOnce();
+    this.fromAlarm = false;
     await this.state.storage.setAlarm(Date.now() + POLL_MS);
   }
 
@@ -125,7 +127,8 @@ export class LiveCoin {
       }
       addBurns(s, foundBurns);
       // once per coin: look up its past burns, so the list isn't empty just because nobody was watching when they happened
-      if (!s.histDone && now >= (s.histNext || 0)) await burnHistory(env, s).catch(() => { s.histNext = now + 3_600_000; });
+      // (run from the background poll, so a visitor's first page load never waits on it)
+      if (this.fromAlarm && !s.histDone && now >= (s.histNext || 0)) await burnHistory(env, s).catch(() => { s.histNext = now + 3_600_000; });
       // Market cap from each trade's price. Tiny trades (fees dominate) and wild outliers are not trusted for price;
       // they still count as buys/sells for the game, they just don't move the market cap.
       const toMc = t => (s.supply ? (t.priceUsd ? t.priceUsd * s.supply : s.solUsd ? t.priceSol * s.supply * s.solUsd : 0) : 0);
