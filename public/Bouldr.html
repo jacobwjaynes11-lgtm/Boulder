@@ -10,8 +10,9 @@
 <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
   :root {
-    --bg: #ebe5ef; --panel: #f8f5fa; --ink: #221b36; --muted: #625a78; --line: #dad2e3;
-    --buy: #157a52; --sell: #b8323c; --burn: #b4520a; --accent: #3f2a73; --accent-ink: #fbf6ec;
+    --bg: #f8f1e6; --panel: #fffaf2; --ink: #1f1a12; --muted: #6b5f4d; --line: #ead9c0;
+    --buy: #157a52; --sell: #b8323c; --burn: #b4520a; --accent: #f7931a; --accent-ink: #1f1405; --accent-text: #a8560a;
+    --glow: rgba(247, 147, 26, .22); --btc-pattern: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22180%22%20height%3D%22180%22%20viewBox%3D%220%200%20180%20180%22%3E%3Cg%20fill%3D%22%23f7931a%22%20fill-opacity%3D%220.075%22%20font-family%3D%22Outfit%2C%20Arial%2C%20sans-serif%22%20font-weight%3D%22700%22%3E%3Ctext%20x%3D%2234%22%20y%3D%2272%22%20font-size%3D%2244%22%20transform%3D%22rotate%28-14%2050%2058%29%22%3E%E2%82%BF%3C%2Ftext%3E%3Ctext%20x%3D%22118%22%20y%3D%22158%22%20font-size%3D%2230%22%20transform%3D%22rotate%2812%20128%20148%29%22%3E%E2%82%BF%3C%2Ftext%3E%3C%2Fg%3E%3Cg%20fill%3D%22none%22%20stroke%3D%22%23f7931a%22%20stroke-opacity%3D%220.06%22%20stroke-width%3D%221.5%22%3E%3Crect%20x%3D%22122%22%20y%3D%2230%22%20width%3D%2222%22%20height%3D%2222%22%20rx%3D%223%22%2F%3E%3Crect%20x%3D%22152%22%20y%3D%2230%22%20width%3D%2222%22%20height%3D%2222%22%20rx%3D%223%22%2F%3E%3Cpath%20d%3D%22M144%2041h8%22%2F%3E%3Crect%20x%3D%2214%22%20y%3D%22120%22%20width%3D%2218%22%20height%3D%2218%22%20rx%3D%223%22%2F%3E%3Crect%20x%3D%2240%22%20y%3D%22120%22%20width%3D%2218%22%20height%3D%2218%22%20rx%3D%223%22%2F%3E%3Cpath%20d%3D%22M32%20129h8%22%2F%3E%3C%2Fg%3E%3C%2Fsvg%3E");
     --display: "Outfit", system-ui, -apple-system, "Segoe UI", sans-serif;
     color-scheme: light;
     box-sizing: border-box;
@@ -20,20 +21,29 @@
   }
   @media (prefers-color-scheme: dark) {
     :root:not([data-theme="light"]) {
-      --bg: #100d20; --panel: #1a1630; --ink: #f1ecf7; --muted: #a59dbd; --line: #2e2848;
-      --buy: #4fd99c; --sell: #ff7a7a; --burn: #ffaa5c; --accent: #f0b75a; --accent-ink: #1a1226;
+      --bg: #0e0c09; --panel: #1a160f; --ink: #f6efe3; --muted: #b3a58e; --line: #33291b;
+      --buy: #4fd99c; --sell: #ff7a7a; --burn: #ffaa5c; --accent: #f7931a; --accent-ink: #1a1005; --accent-text: #f7931a;
+      --glow: rgba(247, 147, 26, .2); --btc-pattern: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22180%22%20height%3D%22180%22%20viewBox%3D%220%200%20180%20180%22%3E%3Cg%20fill%3D%22%23f7931a%22%20fill-opacity%3D%220.09%22%20font-family%3D%22Outfit%2C%20Arial%2C%20sans-serif%22%20font-weight%3D%22700%22%3E%3Ctext%20x%3D%2234%22%20y%3D%2272%22%20font-size%3D%2244%22%20transform%3D%22rotate%28-14%2050%2058%29%22%3E%E2%82%BF%3C%2Ftext%3E%3Ctext%20x%3D%22118%22%20y%3D%22158%22%20font-size%3D%2230%22%20transform%3D%22rotate%2812%20128%20148%29%22%3E%E2%82%BF%3C%2Ftext%3E%3C%2Fg%3E%3Cg%20fill%3D%22none%22%20stroke%3D%22%23f7931a%22%20stroke-opacity%3D%220.072%22%20stroke-width%3D%221.5%22%3E%3Crect%20x%3D%22122%22%20y%3D%2230%22%20width%3D%2222%22%20height%3D%2222%22%20rx%3D%223%22%2F%3E%3Crect%20x%3D%22152%22%20y%3D%2230%22%20width%3D%2222%22%20height%3D%2222%22%20rx%3D%223%22%2F%3E%3Cpath%20d%3D%22M144%2041h8%22%2F%3E%3Crect%20x%3D%2214%22%20y%3D%22120%22%20width%3D%2218%22%20height%3D%2218%22%20rx%3D%223%22%2F%3E%3Crect%20x%3D%2240%22%20y%3D%22120%22%20width%3D%2218%22%20height%3D%2218%22%20rx%3D%223%22%2F%3E%3Cpath%20d%3D%22M32%20129h8%22%2F%3E%3C%2Fg%3E%3C%2Fsvg%3E");
       color-scheme: dark;
     }
   }
   :root[data-theme="dark"] {
-    --bg: #100d20; --panel: #1a1630; --ink: #f1ecf7; --muted: #a59dbd; --line: #2e2848;
-    --buy: #4fd99c; --sell: #ff7a7a; --burn: #ffaa5c; --accent: #f0b75a; --accent-ink: #1a1226;
+    --bg: #0e0c09; --panel: #1a160f; --ink: #f6efe3; --muted: #b3a58e; --line: #33291b;
+    --buy: #4fd99c; --sell: #ff7a7a; --burn: #ffaa5c; --accent: #f7931a; --accent-ink: #1a1005; --accent-text: #f7931a;
+    --glow: rgba(247, 147, 26, .2); --btc-pattern: url("data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22180%22%20height%3D%22180%22%20viewBox%3D%220%200%20180%20180%22%3E%3Cg%20fill%3D%22%23f7931a%22%20fill-opacity%3D%220.09%22%20font-family%3D%22Outfit%2C%20Arial%2C%20sans-serif%22%20font-weight%3D%22700%22%3E%3Ctext%20x%3D%2234%22%20y%3D%2272%22%20font-size%3D%2244%22%20transform%3D%22rotate%28-14%2050%2058%29%22%3E%E2%82%BF%3C%2Ftext%3E%3Ctext%20x%3D%22118%22%20y%3D%22158%22%20font-size%3D%2230%22%20transform%3D%22rotate%2812%20128%20148%29%22%3E%E2%82%BF%3C%2Ftext%3E%3C%2Fg%3E%3Cg%20fill%3D%22none%22%20stroke%3D%22%23f7931a%22%20stroke-opacity%3D%220.072%22%20stroke-width%3D%221.5%22%3E%3Crect%20x%3D%22122%22%20y%3D%2230%22%20width%3D%2222%22%20height%3D%2222%22%20rx%3D%223%22%2F%3E%3Crect%20x%3D%22152%22%20y%3D%2230%22%20width%3D%2222%22%20height%3D%2222%22%20rx%3D%223%22%2F%3E%3Cpath%20d%3D%22M144%2041h8%22%2F%3E%3Crect%20x%3D%2214%22%20y%3D%22120%22%20width%3D%2218%22%20height%3D%2218%22%20rx%3D%223%22%2F%3E%3Crect%20x%3D%2240%22%20y%3D%22120%22%20width%3D%2218%22%20height%3D%2218%22%20rx%3D%223%22%2F%3E%3Cpath%20d%3D%22M32%20129h8%22%2F%3E%3C%2Fg%3E%3C%2Fsvg%3E");
     color-scheme: dark;
   }
   *, *::before, *::after { box-sizing: inherit; }
   html, body { margin: 0; }
+  .preview-bar { position: relative; z-index: 30; padding: 9px 16px; text-align: center; font-size: 14px; font-weight: 600; background: var(--accent); color: var(--accent-ink); }
+  .live-preview #trade { display: none; }
   body {
-    background: var(--bg); color: var(--ink);
+    background-color: var(--bg); color: var(--ink);
+    background-image: radial-gradient(ellipse 90% 55% at 50% -8%, var(--glow), transparent 72%),
+                      radial-gradient(ellipse 60% 40% at 100% 100%, var(--glow), transparent 70%),
+                      var(--btc-pattern);
+    background-size: auto, auto, 180px 180px;
+    background-attachment: fixed, fixed, scroll;
     font: 16px/1.5 "Outfit", system-ui, -apple-system, "Segoe UI", sans-serif;
   }
   main {
@@ -218,8 +228,8 @@
   .pill { font-size: 13px; font-weight: 600; border-radius: 999px; padding: 4px 11px; border: 1px solid var(--line); color: var(--muted); white-space: nowrap; }
   .pill.done { color: var(--burn); border-color: currentColor; }
   .pill.reached { color: var(--buy); border-color: currentColor; }
-  .pill.next { color: var(--accent); border-color: currentColor; }
-  .plan-item.is-next .plan-mc { color: var(--accent); }
+  .pill.next { color: var(--accent-text); border-color: currentColor; }
+  .plan-item.is-next .plan-mc { color: var(--accent-text); }
   .plan-item.is-done .plan-mc { color: var(--burn); }
   .plan-progress { grid-column: 2 / -1; display: grid; gap: 6px; margin-top: 6px; }
   .plan-bar { height: 6px; border-radius: 3px; background: var(--line); overflow: hidden; }
@@ -282,7 +292,7 @@
   .set-grid.two { grid-template-columns: 1fr 1fr; }
   .set-grid label { font-size: 13px; color: var(--muted); font-weight: 400; display: grid; gap: 4px; margin: 0; }
   .settings input { padding: 8px 10px; background: var(--panel); }
-  .pump { font-size: 14px; font-weight: 600; color: var(--accent); align-self: center; margin-left: auto; }
+  .pump { font-size: 14px; font-weight: 600; color: var(--accent-text); align-self: center; margin-left: auto; }
   .fine { font-size: 12px; color: var(--muted); margin: 10px 0 0; line-height: 1.45; }
   .status a { color: inherit; }
   .status.ok { color: var(--buy); }
@@ -537,6 +547,9 @@
   const reduceMotion = matchMedia('(prefers-reduced-motion: reduce)').matches;
   const params = new URLSearchParams(location.search);
   const inPreview = /claude/i.test(location.hostname);
+  // ?preview=<any pump.fun coin> shows the full $BOULDER site with the game running live on that coin's real trades,
+  // so you can see the live look before launch. Buy links stay on $BOULDER and the trade panel is hidden.
+  const PREVIEW_MINT = /^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(params.get('preview') || '') ? params.get('preview') : '';
   const DISPLAY = '"Press Start 2P", ui-monospace, monospace';
 
   // ▼ Paste your coin's contract address here once it's launched. Leave empty until then.
@@ -627,7 +640,7 @@
     const dpr = Math.min(2, window.devicePixelRatio || 1);
     W = r.width; H = r.height;
     // Draw at a fraction of the screen size, then scale up with hard pixel edges
-    const PXS = Math.max(3, Math.min(4, Math.round(Math.min(W, H) / 150)));
+    const PXS = Math.max(2, Math.min(3, Math.round(Math.min(W, H) / 230)));   // pixel size: smaller = finer detail, same retro look
     pxs = PXS;
     lowW = Math.max(1, Math.round(W / PXS)); lowH = Math.max(1, Math.round(H / PXS));
     canvas.width = lowW; canvas.height = lowH;
@@ -1440,8 +1453,8 @@
   }
   renderSocials(COIN_MINT);
   function updateSiteMint() {
-    // Site-wide buy links and contract address follow the coin set in COIN_MINT (or ?mint=)
-    const coin = mint || COIN_MINT;
+    // Site-wide buy links and contract address follow the coin set in COIN_MINT (or ?mint=); a live preview never links to the preview coin
+    const coin = PREVIEW_MINT ? COIN_MINT : (mint || COIN_MINT);
     renderSocials(coin);
     document.querySelectorAll('.buy-link').forEach(a => {
       if (coin) { a.href = 'https://pump.fun/coin/' + coin; a.target = '_blank'; }
@@ -1452,7 +1465,7 @@
     document.querySelectorAll('[data-ca]').forEach(el => el.textContent = coin ? shortAddr(coin) : '');
   }
   document.querySelectorAll('[data-copy-ca]').forEach(b => b.onclick = async () => {
-    const coin = mint || COIN_MINT;
+    const coin = PREVIEW_MINT ? COIN_MINT : (mint || COIN_MINT);
     try { await navigator.clipboard.writeText(coin); b.textContent = 'Copied'; setTimeout(() => b.textContent = 'Copy', 1500); } catch (e) {}
   });
 
@@ -1995,16 +2008,16 @@
   }
 
   // Where her body sits for a given foot position. Upright, arms raised overhead into the boulder.
-  const TORSO = () => U * 0.95, ARM = () => U * 1.25;
+  const TORSO = () => (pxs ? 10 * pxs : U * 0.75), ARM = () => U * 1.1;   // torso height matches the hand-drawn sprite
   function bodyFrame(s, lean, c) {
     const bx = Math.sin(lean), by = -Math.cos(lean);
     const F = frameAt(s);
-    const hip = { x: F.x + F.tx * U * 0.3, y: F.y + F.ty * U * 0.3 - U * 1.02 };
-    const sh = { x: hip.x + bx * TORSO(), y: hip.y + by * TORSO() };
+    const hip = { x: F.x + F.tx * U * 0.3, y: F.y + F.ty * U * 0.3 - U * 1.0 };    // hips at a height her legs can reach: nearly straight, never on her knees
+    const sh = { x: hip.x + bx * TORSO() + (pxs || 0) * 2.3, y: hip.y + by * TORSO() };   // + the shoulder's spot on the sprite, just forward of the hips
     return { F, hip, sh, bx, by };
   }
   // Palms sit on the lower, downhill side of the boulder (angle measured from its centre), so her arms drive up into it
-  const PALM_F = 2.55, PALM_B = 2.38;   // hands sit higher on the boulder's back, so she stands more upright
+  const PALM_F = 2.35, PALM_B = 2.2;   // hands at shoulder height on the back of the boulder: arms reach forward, nearly straight
   function palmPoint(c, a) {
     // keep the palms on the same spot of the slope even as the boulder rolls
     const f = frameAt(boulderS()), slopeA = Math.atan2(f.ty, f.tx);
@@ -2017,7 +2030,7 @@
     for (let i = 0; i < 6; i++) {
       const sh = bodyFrame(sF, lean, c).sh, pp = palmPoint(c, (PALM_F + PALM_B) / 2);
       const d = Math.hypot(sh.x - pp.x, sh.y - pp.y);
-      sF += (d - ARM() * 0.93) * 1.1;
+      sF += (d - ARM() * 0.9) * 1.1;
     }
     return Math.min(sF, sb - R * 0.9);
   }
@@ -2037,7 +2050,7 @@
     const S = STEP();
 
     if (!pose.feet || Math.abs(pose.feet[0].u * L - sF) > S * 4 || Math.abs(pose.feet[1].u * L - sF) > S * 4) {
-      pose.feet = [{ u: (sF - S * 0.2) / L, lift: 0, sw: null }, { u: (sF + S * 0.12) / L, lift: 0, sw: null }];
+      pose.feet = [{ u: (sF - S * 0.08) / L, lift: 0, sw: null }, { u: (sF + S * 0.12) / L, lift: 0, sw: null }];
     }
     const feet = pose.feet;
 
@@ -2045,7 +2058,7 @@
       // Braced and skidding: both feet dragged back with the body
       feet.forEach((f, i) => {
         f.sw = null; f.lift *= 0.8;
-        const want = sF + (i === 0 ? -S * 0.28 : S * 0.16);
+        const want = sF + (i === 0 ? -S * 0.12 : S * 0.1);
         f.u += (want / L - f.u) * Math.min(1, dt * 10);
       });
     } else {
@@ -2056,10 +2069,14 @@
       }
       const swinging = feet.find(f => f.sw);
       if (!swinging) {
-        const rear = feet[0].u <= feet[1].u ? feet[0] : feet[1];
+        let rear = feet[0].u <= feet[1].u ? feet[0] : feet[1];
         const front = rear === feet[0] ? feet[1] : feet[0];
         const behind = sF - rear.u * L, ahead = front.u * L - sF;
-        const need = moving === 1 ? behind > S * 0.28 : (behind > S * 0.6 || ahead > S * 0.8 || -behind > S * 0.4);
+        // a planted foot she can no longer reach (the boulder surged ahead) is stepped right away, like a real catch-up step
+        const forced = pose.unreach != null && feet[pose.unreach] && !feet[pose.unreach].sw ? feet[pose.unreach] : null;
+        if (forced) rear = forced;
+        pose.unreach = null;
+        const need = forced || (moving === 1 ? behind > S * 0.1 : (behind > S * 0.35 || ahead > S * 0.45 || -behind > S * 0.3));
         if (need) {
           const dur = moving === 1 ? Math.max(0.16, Math.min(0.36, (S * 1.4) / Math.max(speed, 1))) : 0.38;
           rear.sw = { from: rear.u * L, t: 0, dur };
@@ -2108,7 +2125,7 @@
     const light = css(mixc('#a06a44', '#e0a066', p));
     const hair = '#1e1410', cloth = css(mixc('#3a2a24', '#5a3f2e', p));
     const LX = 0.55, LY = -0.83;                                // light direction (up and toward the sun)
-    const THIGH = U * 0.74, SHIN = U * 0.72;   // long enough that both feet stay planted on the slope
+    const THIGH = U * 0.7, SHIN = U * 0.68;    // legs in proportion with her head and torso
 
     // Muscled limb: a tapered bone with a muscle belly; shadow pass, then a lit pass nudged toward the light
     function muscle(a, b, w1, w2, base, hi, bulge = 0) {
@@ -2313,6 +2330,7 @@
     ctx.save();
     const shx = (Math.random() - 0.5) * power.shake, shy = (Math.random() - 0.5) * power.shake;
     ctx.translate(-cam.x + shx, -cam.y + shy);
+    frameShake = { x: shx, y: shy };
     const view = { x0: cam.x - 60, x1: cam.x + W + 60, y0: cam.y - 60, y1: cam.y + H + 60 };
 
     if (geomH < 0.999) drawGhost();
@@ -2341,6 +2359,7 @@
     v.addColorStop(0, 'rgba(8,5,20,0)'); v.addColorStop(1, 'rgba(8,5,20,0.5)');
     ctx.fillStyle = v; ctx.fillRect(0, 0, W, H);
     retroize();
+    paintSprite();
     drawOverlay();
   }
 
@@ -2401,13 +2420,15 @@
     const c = boulderCenter();
     const lean = pose.lean + Math.sin(time / 650) * (moving ? 0 : 0.015);
     const fr = bodyFrame(pose.sF, lean, c);
-    const { bx, by } = fr;
-    const px = -by, py = bx;
+    let { bx, by } = fr;
+    let px = -by, py = bx;
     const ht = power.heaveT;
     const crouch = ht < 0 ? 0 : ht < 0.32 ? U * 0.18 * (ht / 0.32) : U * 0.18 * Math.max(0, 1 - (ht - 0.32) / 0.2);
-    let hip = { x: fr.hip.x + bx * pose.pulse * U * 0.05, y: fr.hip.y + crouch - pose.pulse * U * 0.03 - power.superLevel * U * 0.05 };
+    const swingFoot = pose.feet.find(f => f.sw), strideBob = swingFoot ? Math.sin(Math.PI * Math.min(1, swingFoot.sw.t)) * U * 0.022 : 0;   // body rises as a leg swings through
+    let hip = { x: fr.hip.x + bx * pose.pulse * U * 0.05, y: fr.hip.y + crouch - pose.pulse * U * 0.03 - power.superLevel * U * 0.05 - strideBob };
     let sh = { x: hip.x + bx * TORSO(), y: hip.y + by * TORSO() };
-    const THIGH = U * 0.74, SHIN = U * 0.72;   // long enough that both feet stay planted on the slope
+    if (!flight.active && pxs) sh = { x: hip.x + (bx / -by) * 10 * pxs, y: hip.y - 10 * pxs };   // shoulders sit 10 pixels above the hips on the sprite
+    const THIGH = U * 0.7, SHIN = U * 0.68;    // legs in proportion with her head and torso
     // The planted back foot pushes off: heel rises and the leg drives, toes stay on the ground
     const rearIdx = pose.feet[0].u <= pose.feet[1].u ? 0 : 1, Sst = STEP();
     const feet = pose.feet.map((f, i) => {
@@ -2425,38 +2446,51 @@
     let hdx = bx * 0.55 + Math.cos(toC) * 0.45, hdy = by * 0.55 + Math.sin(toC) * 0.45; const hm = Math.hypot(hdx, hdy) || 1; hdx /= hm; hdy /= hm;
     let head = { x: sh.x + hdx * U * 0.34 + px * U * 0.06, y: sh.y + hdy * U * 0.34 + py * U * 0.06 };
     if (flight.active) {
-      // Hanging under the boulder, arms locked overhead, legs trailing behind, jets firing
-      const flap = Math.sin(time / 80);
-      sh = { x: c.x - R * 0.2, y: c.y + R * 0.95 + ARM() * 0.8 };
-      armB = ik(sh, { x: c.x - R * 0.35, y: c.y + R * 0.9 }, ARM() * 0.52, ARM() * 0.5, 1);
-      armF = ik(sh, { x: c.x + R * 0.05, y: c.y + R * 0.97 }, ARM() * 0.52, ARM() * 0.5, 1);
+      // Full-body sprawl: arms straight out to the back of the boulder, body and legs stretched out behind her at full length
+      const fa = frameAt(boulderS());
+      let kx = -fa.tx, ky = -fa.ty + 0.25; const km = Math.hypot(kx, ky) || 1; kx /= km; ky /= km;   // pointing back, slightly down
+      const qx = -ky, qy = kx;                                                                        // across the body
+      const flap = Math.sin(time / 80) * U * 0.07;
+      const contact = { x: c.x + kx * R * 0.96, y: c.y + ky * R * 0.96 };                         // the back of the boulder
+      sh = { x: contact.x + kx * ARM() * 0.92, y: contact.y + ky * ARM() * 0.92 };
+      armF = ik(sh, { x: contact.x + qx * U * 0.1, y: contact.y + qy * U * 0.1 }, ARM() * 0.52, ARM() * 0.5, 1);
+      armB = ik(sh, { x: contact.x - qx * U * 0.12, y: contact.y - qy * U * 0.12 }, ARM() * 0.52, ARM() * 0.5, 1);
       if (flight.mode === 'superman' && flight.smashed) {
-        // Breakthrough: no boulder to hold, so one arm punches forward the way she's flying and the other stays down at her side
-        const fa = frameAt(boulderS());
-        let ax = fa.tx * 0.8 + 0.25, ay = fa.ty * 0.8 - 0.55; const am = Math.hypot(ax, ay) || 1; ax /= am; ay /= am;
-        armF = ik(sh, { x: sh.x + ax * ARM() * 0.98, y: sh.y + ay * ARM() * 0.98 }, ARM() * 0.52, ARM() * 0.5, 1);
-        armB = ik(sh, { x: sh.x - U * 0.12, y: sh.y + ARM() * 0.92 }, ARM() * 0.52, ARM() * 0.5, -1);
+        // Breakthrough: no boulder to hold, so one arm punches forward the way she's flying and the other stays at her side
+        armF = ik(sh, { x: sh.x - kx * ARM() * 0.98, y: sh.y - ky * ARM() * 0.98 }, ARM() * 0.52, ARM() * 0.5, 1);
+        armB = ik(sh, { x: sh.x + kx * ARM() * 0.9 - qx * U * 0.15, y: sh.y + ky * ARM() * 0.9 - qy * U * 0.15 }, ARM() * 0.52, ARM() * 0.5, -1);
       }
-      hip = { x: sh.x - U * 0.4, y: sh.y + TORSO() * 0.92 };
-      const kn1 = { x: hip.x - U * 0.5, y: hip.y + U * 0.35 + flap * U * 0.06 }, kn2 = { x: hip.x - U * 0.3, y: hip.y + U * 0.5 - flap * U * 0.06 };
-      legs = [{ knee: kn1, ft: { x: kn1.x - U * 0.55, y: kn1.y + U * 0.2 } }, { knee: kn2, ft: { x: kn2.x - U * 0.5, y: kn2.y + U * 0.35 } }];
+      hip = { x: sh.x + kx * TORSO(), y: sh.y + ky * TORSO() };
+      // legs keep their full length: thigh then shin, straight out behind with a gentle flutter
+      const leg = (side, f, bend) => {
+        const knee = { x: hip.x + kx * THIGH + qx * (side * U * 0.06 + f), y: hip.y + ky * THIGH + qy * (side * U * 0.06 + f) };
+        // the knee bends: the shin swings up toward her back by `bend` radians (whichever rotation points up on screen)
+        const r = a => ({ x: kx * Math.cos(a) - ky * Math.sin(a), y: kx * Math.sin(a) + ky * Math.cos(a) });
+        const s1 = r(bend), s2 = r(-bend), sd = s1.y < s2.y ? s1 : s2;
+        return { knee, ft: { x: knee.x + sd.x * SHIN, y: knee.y + sd.y * SHIN } };
+      };
+      const fl = Math.sin(time / 80) * 0.12;                                     // a gentle flutter at the knees
+      legs = [leg(-1, -flap * 0.4, 0.38 - fl), leg(1, flap * 0.4, 0.7 + fl)];   // far leg slightly bent, near leg bent more
       back = 0;
-      hdx = 0.15; hdy = -0.99;
-      head = { x: sh.x + U * 0.04, y: sh.y - U * 0.3 };
-      pose.feetWorld = legs.map(l => l.ft);
+      // the body's axis now runs from hips to shoulders, toward the boulder; her chest faces the ground
+      bx = -kx; by = -ky; px = -by; py = bx;
+      hdx = -kx; hdy = -ky;
+      head = { x: sh.x - kx * U * 0.3 - qx * U * 0.1, y: sh.y - ky * U * 0.3 - qy * U * 0.1 };
+      // rocket jets fire from just past her toes, so her feet stay visible in front of the flames
+      pose.feetWorld = legs.map(l => { const dx = l.ft.x - l.knee.x, dy = l.ft.y - l.knee.y, m = Math.hypot(dx, dy) || 1; return { x: l.ft.x + dx / m * U * 0.34, y: l.ft.y + dy / m * U * 0.34 }; });
       pose.core = { x: (hip.x + sh.x) / 2, y: (hip.y + sh.y) / 2 };
     }
 
-    const gold = power.superLevel > 0.3 && Math.floor(time / 90) % 3 !== 0;
-    // The Boulder Holder: orange hair, gold eyes, black Bitcoin crop top, dark jacket with a fur collar
+    const gold = power.superLevel > 0.3;   // super strength: a steady golden glow on her skin (no flicker); her clothes stay black
+    // The Boulder Holder: orange hair, black Bitcoin crop top, dark shorts
     const COL = gold
-      ? { skin: '#fee761', skinShade: '#feae34', skinLight: '#ffffff', hair: '#feae34', hairShade: '#f77622', hairLight: '#fee761',
-          top: '#733e39', jacket: '#b86f50', jacketDark: '#733e39', lining: '#fee761', fur: '#ffffff', shoe: '#fee761', sole: '#f77622', mark: '#ffffff', eye: '#ffffff' }
-      : { skin: '#e4a672', skinShade: '#b86f50', skinLight: '#ead4aa', hair: '#f77622', hairShade: '#be4a2f', hairLight: '#feae34',
+      ? { skin: '#feae34', skinShade: '#d77643', skinLight: '#fee761', hair: '#f77622', hairShade: '#be4a2f', hairLight: '#e8b796',
+          top: '#262b44', jacket: '#3a4466', jacketDark: '#262b44', lining: '#f77622', fur: '#c0cbdc', shoe: '#c0cbdc', sole: '#f77622', mark: '#feae34', eye: '#fee761' }
+      : { skin: '#e4a672', skinShade: '#b86f50', skinLight: '#ead4aa', hair: '#f77622', hairShade: '#be4a2f', hairLight: '#fee761',
           top: '#262b44', jacket: '#3a4466', jacketDark: '#262b44', lining: '#f77622', fur: '#c0cbdc', shoe: '#c0cbdc', sole: '#f77622', mark: '#feae34', eye: '#fee761' };
 
     // Rasterise onto the low-res grid
-    const cells = new Map();
+    const cells = new Map(), fixedCells = new Set();
     const gx = v => Math.round((v - cam.x) / pxs), gy = v => Math.round((v - cam.y) / pxs);
     const put = (x, y, col) => cells.set(x + ',' + y, [x, y, col]);
     const blob = (x, y, r, col) => { for (let j = -r; j <= r; j++) for (let i = -r; i <= r; i++) if (i * i + j * j <= r * r + r) put(x + i, y + j, col); };
@@ -2465,7 +2499,9 @@
       const n = Math.max(1, Math.ceil(Math.hypot(x1 - x0, y1 - y0) * 2));
       for (let k = 0; k <= n; k++) {
         const x = Math.round(x0 + (x1 - x0) * k / n), y = Math.round(y0 + (y1 - y0) * k / n);
-        if (w <= 1) put(x, y, col); else if (w === 2) { put(x, y, col); put(x + 1, y, col); put(x, y + 1, col); put(x + 1, y + 1, col); } else blob(x, y, 1, col);
+        if (w <= 1) put(x, y, col); else if (w === 2) { put(x, y, col); put(x + 1, y, col); put(x, y + 1, col); put(x + 1, y + 1, col); }
+        else if (w === 5) { for (let j = -1; j <= 2; j++) for (let i = -1; i <= 2; i++) put(x + i, y + j, col); }   // even outline around a 2-wide stroke
+        else blob(x, y, w >= 4 ? 2 : 1, col);
       }
     };
     const G = pt => ({ x: (pt.x - cam.x) / pxs, y: (pt.y - cam.y) / pxs });
@@ -2485,92 +2521,252 @@
     const thick = (a, b, w, col) => line(a, b, w, col);
     const off = (pt, k1, k2) => ({ x: pt.x + px * k1 + bx * k2, y: pt.y + py * k1 + by * k2 });
     const T = TORSO();
-    const hx = gx(head.x), hy = gy(head.y), hr = Math.max(2, Math.round(U * 0.2 / pxs));
+    const hx = gx(head.x), hy = gy(head.y), hr = Math.max(3, Math.round(U * 0.23 / pxs));
     const faceAng = Math.atan2(hdy, hdx);
-    // far leg (in shadow) with a sneaker
-    // where each sneaker's toe goes: flat on the ground, or tipped onto the toes while pushing off
-    // Bare feet, always the same length from the ankle: flat on the rock when planted, up on the toes while pushing off
+    const INK = '#181425';
+    const W2 = (x, y) => ({ x: cam.x + (x + 0.5) * pxs, y: cam.y + (y + 0.5) * pxs });   // the centre of one pixel, in world space
+    // ---- Standing rig: joints pinned to exact pixels of the hand-drawn torso ----
+    // shoulders sit on the torso's top corners, hips on its bottom, the head on its neck; arms and legs bend from there
+    // the upper-body sprite: head, neck and torso in side profile, drawn as one piece like a studio character sheet
+    // O outline · H hair · h hair shadow · L hair shine · S skin · s skin shadow · l skin light · E eye · B blush · M mouth
+    // T top · t top highlight · G the gold ₿ · R orange hem · Y waistband · P shorts · p shorts highlight
+    const UPPER_SPRITE = [
+        '...OOOOO......',
+        '..OHHHHLOO....',
+        '.OHHHHHHLHO...',
+        'OHHHhHHHHHHO..',
+        'OHHhHHHHHHHHO.',
+        'OHhHHHHHHSSO..',
+        'OHhHHsSSSESO..',
+        'OhhHsSsSSESSO.',
+        'OhhHHsSSBSSO..',
+        'OhhhHOsSSSMO..',
+        'OhhhhOOsSSO...',
+        'OhhhhO.OsSO...',
+        'OhhhOTTTTTtO..',
+        'OhhOTTTTTTTtO.',
+        'OhhOTTTTGGTtO.',
+        'OhOTTTTTGTGtO.',
+        '.OOTTTTTGGTtO.',
+        '..OTTTTTGTGO..',
+        '..OTTTTTGGO...',
+        '..ORRRRRRRO...',
+        '..OsSSSSSlO...',
+        '..OsSSSSsO....',
+        '..OYYYYYYO....',
+        'OPPPPPPPPPO...',
+        'OPPPPPPPPO....',
+        '.OPPPPPPO.....',
+    ];
+    const UROWS = UPPER_SPRITE.length, HIP_ROW = 23, HIP_COL = 5, SH_ROW = 13;
+    let TT = null;
+    if (!flight.active) {
+      // feet stay planted: if a standing foot is out of reach (her body lifted on a heave, a step or super strength),
+      // the hips drop just enough to keep that foot on the rock, the way a real body does
+      // ...and hands stay on the boulder: if her shoulders end up too far from the rock, her body leans in just enough
+      const reach = (THIGH + SHIN) * 0.97, baseHip = hip, baseSh = sh;
+      for (let pass = 0; pass < 3; pass++) {
+        feet.forEach((ft, i) => {
+          if (pose.feet[i] && pose.feet[i].sw) return;
+          const dx = ft.x - hip.x, need = Math.sqrt(Math.max(0, reach * reach - dx * dx));
+          if (ft.y - hip.y > need) { const drop = ft.y - need - hip.y; hip = { x: hip.x, y: hip.y + drop }; sh = { x: sh.x, y: sh.y + drop }; }
+        });
+        const sx0 = sh.x + pxs, vx = sx0 - c.x, vy = sh.y - c.y, vm = Math.hypot(vx, vy) || 1;
+        const gap = vm - R * 0.98 - ARM() * 0.99;
+        if (gap <= 0) break;
+        const mx = -vx / vm * gap, my = -vy / vm * gap;
+        hip = { x: hip.x + mx, y: hip.y + my }; sh = { x: sh.x + mx, y: sh.y + my };
+      }
+      // ease the correction in over a few frames, so the body glides instead of snapping between positions
+      const want = { x: hip.x - baseHip.x, y: hip.y - baseHip.y };
+      pose.corr = pose.corr || { x: 0, y: 0 };
+      const ky = want.y > pose.corr.y ? 0.6 : 0.15;                                   // drop quickly to keep a foot down, rise back gently
+      pose.corr.x += (want.x - pose.corr.x) * 0.3; pose.corr.y += (want.y - pose.corr.y) * ky;
+      hip = { x: baseHip.x + pose.corr.x, y: baseHip.y + pose.corr.y }; sh = { x: baseSh.x + pose.corr.x, y: baseSh.y + pose.corr.y };
+      const hx0 = gx(hip.x), hy0 = gy(hip.y);
+      const lean = (sh.x - hip.x) / Math.max(1, hip.y - sh.y), sx = up => Math.round(lean * up);
+      const breath = moving ? 0 : (Math.sin(time / 760) > 0.35 ? 1 : 0);            // idle: chest rises a pixel as she breathes
+      const cell = (i, r) => ({ x: hx0 - HIP_COL + i + sx(HIP_ROW - r), y: hy0 - (HIP_ROW - r) - (r <= 19 ? breath : 0) });
+      TT = { hx0, hy0, sx, cell };
+      const c6 = cell(6, SH_ROW), c5 = cell(5, SH_ROW), hf = cell(5, HIP_ROW), hb = cell(4, HIP_ROW);
+      const shF = W2(c6.x, c6.y), shB = W2(c5.x, c5.y);
+      // hands stay on the boulder: if the usual spot is out of reach, the hand slides to the nearest point on the rock it can reach
+      const handOn = (from, ang) => {
+        const reachA = ARM() * 1.01, p0 = palmPoint(c, ang);
+        if (Math.hypot(p0.x - from.x, p0.y - from.y) <= reachA) return p0;
+        const vx = from.x - c.x, vy = from.y - c.y, vm = Math.hypot(vx, vy) || 1;
+        return { x: c.x + vx / vm * R * 0.98, y: c.y + vy / vm * R * 0.98 };
+      };
+      armF = ik(shF, handOn(shF, PALM_F), ARM() * 0.52, ARM() * 0.5, 1); armF.from = shF;
+      armB = ik(shB, handOn(shB, PALM_B), ARM() * 0.52, ARM() * 0.5, 1); armB.from = shB;
+      const hipF = W2(hf.x, hf.y), hipB = W2(hb.x, hb.y);
+      legs = feet.map((ft, i) => { const from = i === back ? hipB : hipF; const s = ik(from, ft, THIGH, SHIN, -1); return { knee: s.joint, ft: s.end, from }; });
+      pose.feetWorld = legs.map(l => l.ft);
+      pose.core = { x: (hipF.x + shF.x) / 2, y: (hipF.y + shF.y) / 2 };
+      // tell the walk if a planted foot can't reach the rock this frame, so she steps with it next
+      legs.forEach((l, i) => {
+        const pf = pose.feet[i];
+        if (!pf || pf.sw || Math.hypot(l.ft.x - feet[i].x, l.ft.y - feet[i].y) <= pxs * 2.5) return;
+        if (pose.feet.some(o => o.sw)) {
+          // the other foot is mid-step, so this one skids forward along the rock to where it can still touch
+          const q = feet[i].q; if (q) pf.u += ((l.ft.x - feet[i].x) * q.tx + (l.ft.y - feet[i].y) * q.ty) / L;
+        } else pose.unreach = i;
+      });
+    }
+    const legFrom = i => legs[i].from || hip, armFrom = a => a.from || sh;
+    // feet: always the same length from the ankle, flat on the rock, up on the toes while pushing off
     const toeOf = i => {
       const f = feet[i], ft = legs[i].ft;
-      if (flight.active || !f || !f.q) return { x: ft.x + U * 0.26, y: ft.y + U * 0.05 };
+      if (flight.active) return { x: ft.x - bx * U * 0.26, y: ft.y - by * U * 0.26 };   // flying: feet point back
+      if (!f || !f.q) return { x: ft.x + U * 0.26, y: ft.y + U * 0.05 };
       const tilt = (f.push || 0) * 0.7, len = U * 0.3, q = f.q;
       return { x: ft.x + (q.tx * Math.cos(tilt) - q.nx * Math.sin(tilt)) * len, y: ft.y + (q.ty * Math.cos(tilt) - q.ny * Math.sin(tilt)) * len };
     };
-    // shorts: each leg opening wraps around the top of the thigh, so they move with her legs
-    const shortsLeg = (knee, col) => {
-      const b = { x: hip.x + (knee.x - hip.x) * 0.45, y: hip.y + (knee.y - hip.y) * 0.45 };
-      const dx = b.x - hip.x, dy = b.y - hip.y, m = Math.hypot(dx, dy) || 1, nx = -dy / m * pxs * 2.2, ny = dx / m * pxs * 2.2;
-      fillPoly([{ x: hip.x + nx, y: hip.y + ny }, { x: hip.x - nx, y: hip.y - ny }, { x: b.x - nx * 1.1, y: b.y - ny * 1.1 }, { x: b.x + nx * 1.1, y: b.y + ny * 1.1 }], col);
-      line({ x: b.x - nx * 1.05, y: b.y - ny * 1.05 }, { x: b.x + nx * 1.05, y: b.y + ny * 1.05 }, 1, COL.jacketDark);   // hem
+    // shorts: each leg opening wraps the top of the thigh and moves with it
+    const shortsLeg = (i, col) => {
+      const h0 = legFrom(i), knee = legs[i].knee;
+      const b = { x: h0.x + (knee.x - h0.x) * 0.42, y: h0.y + (knee.y - h0.y) * 0.42 };
+      const dx = b.x - h0.x, dy = b.y - h0.y, m = Math.hypot(dx, dy) || 1, nx = -dy / m * pxs * 2, ny = dx / m * pxs * 2;
+      fillPoly([{ x: h0.x + nx, y: h0.y + ny }, { x: h0.x - nx, y: h0.y - ny }, { x: b.x - nx, y: b.y - ny }, { x: b.x + nx, y: b.y + ny }], col);
     };
-    thick(hip, legs[back].knee, 3, COL.skinShade); thick(legs[back].knee, legs[back].ft, 2, COL.skinShade);
-    // a proper foot: heel behind the ankle, sole along the rock, toes at the front
-    const drawFoot = (i, col, toes) => {
-      const ft = legs[i].ft, toe = toeOf(i);
-      const heel = { x: ft.x - (toe.x - ft.x) * 0.3, y: ft.y - (toe.y - ft.y) * 0.3 };
-      line(heel, toe, 2, col);
-      const T = G(toe); put(Math.round(T.x), Math.round(T.y), toes);
+    const drawFoot = (ft, d, col) => {
+      line({ x: ft.x - d.x * pxs * 0.6, y: ft.y - d.y * pxs * 0.6 }, { x: ft.x + d.x * U * 0.12, y: ft.y + d.y * U * 0.12 }, 2, col);   // heel and arch
+      line(ft, { x: ft.x + d.x * U * 0.26, y: ft.y + d.y * U * 0.26 }, 1, col);                                                           // pointed toes
     };
-    drawFoot(back, COL.skinShade, COL.skin);
-    shortsLeg(legs[back].knee, COL.jacketDark);
-    // far arm in its jacket sleeve, hand showing
-    thick(sh, armB.joint, 2, COL.jacketDark); thick(armB.joint, off(armB.end, 0, 0), 2, COL.jacketDark);
-    put(Math.round(G(armB.end).x), Math.round(G(armB.end).y), COL.skinShade);
-    // torso: slimmer, black crop top over the chest, bare midriff, dark shorts
+    // legs: a 3-pixel thigh, a calf that swells at the back below the knee, a slim ankle and a pointed foot on the rock
+    const taperLeg = (i, col, edge) => {
+      const h0 = legFrom(i), k = legs[i].knee, ft = legs[i].ft, mid = { x: k.x + (ft.x - k.x) * 0.55, y: k.y + (ft.y - k.y) * 0.55 };
+      if (edge) { line(h0, k, 4, INK); line(k, mid, 5, INK); }      // the near leg gets one even edge where it crosses the far one
+      thick(h0, k, 3, col); thick(k, mid, 2, col); line(mid, ft, 1, col);
+      // calf: one pixel of muscle on the back of the upper shin
+      const vx = ft.x - k.x, vy = ft.y - k.y, vm = Math.hypot(vx, vy) || 1;
+      let nx = -vy / vm, ny = vx / vm;
+      if (flight.active ? ny > 0 : nx > 0) { nx = -nx; ny = -ny; }        // the back of the leg
+      const ca = { x: k.x + vx * 0.15 + nx * pxs * 1.1, y: k.y + vy * 0.15 + ny * pxs * 1.1 }, cb = { x: k.x + vx * 0.45 + nx * pxs * 0.9, y: k.y + vy * 0.45 + ny * pxs * 0.9 };
+      line(ca, cb, 1, col);
+      if (edge) { const kp = G({ x: k.x - nx * pxs * 0.9, y: k.y - ny * pxs * 0.9 }); put(Math.round(kp.x), Math.round(kp.y), COL.skinLight); }   // kneecap
+      if (flight.active) {
+        // flying: a pointed foot, like a diver's. The slim ankle opens into a slightly wider instep that runs straight on
+        // from the shin, then tapers to the toes; a small heel bump sits at the back of the ankle
+        const ux = vx / vm, uy = vy / vm;
+        const inst = { x: ft.x + ux * U * 0.15, y: ft.y + uy * U * 0.15 }, toe = { x: ft.x + ux * U * 0.27, y: ft.y + uy * U * 0.27 };
+        line(ft, inst, 2, col);                                                    // instep
+        line(inst, toe, 1, col);                                                   // toes
+        const hb = G({ x: ft.x + nx * pxs * 1.2, y: ft.y + ny * pxs * 1.2 }); put(Math.round(hb.x), Math.round(hb.y), col);   // heel
+        return;
+      }
+      // standing and pushing: the same foot, laid along the rock (tipping up onto the toes as that leg pushes off)
+      const t = toeOf(i), tm = Math.hypot(t.x - ft.x, t.y - ft.y) || 1;
+      drawFoot(ft, { x: (t.x - ft.x) / tm, y: (t.y - ft.y) / tm }, col);
+    };
+    const drawArm = (a, col, light) => {
+      const from = armFrom(a);
+      line(from, a.joint, 5, INK); line(a.joint, a.end, 5, INK);                 // even outline all the way round
+      thick(from, a.joint, 2, col); thick(a.joint, a.end, 2, col);
+      if (light) line(from, a.joint, 1, light);                                 // light along the upper arm
+      const e = G(a.end); put(Math.round(e.x), Math.round(e.y), light || col); // hand on the boulder
+    };
+
+    // 1) far leg
+    taperLeg(back, COL.skinShade);
+    // 2) far arm, in shadow
+    drawArm(armB, COL.skinShade, null);
+    // near leg: in front of the far arm, behind the torso and shorts
+    taperLeg(1 - back, COL.skin, true);
+    { const h0 = legFrom(1 - back), k = legs[1 - back].knee; line({ x: h0.x + (k.x - h0.x) * 0.3, y: h0.y + (k.y - h0.y) * 0.3 }, k, 1, COL.skinLight); }
+    // 3) torso
     const SHW = U * 0.28, WAW = U * 0.14, HPW = U * 0.19;
-    fillPoly([off(sh, -SHW, 0), off(sh, SHW * 0.95, 0), off(hip, WAW, 0), off(hip, -HPW, 0)], COL.skin);
-    line(off(sh, -SHW * 0.7, -U * 0.08), off(hip, -WAW, U * 0.1), 1, COL.skinShade);                    // shaded back
-    fillPoly([off(sh, -SHW * 1.05, U * 0.03), off(sh, SHW * 1.0, U * 0.03), off(sh, SHW * 1.12, -T * 0.3),
-              off(sh, SHW * 0.8, -T * 0.66), off(sh, -SHW * 0.95, -T * 0.64)], COL.top);                  // crop top
-    line(off(sh, SHW * 0.7, -T * 0.66), off(sh, -SHW * 0.9, -T * 0.64), 1, COL.lining);                  // orange trim
-    const mk = G(off(sh, SHW * 0.4, -T * 0.32)), mx = Math.round(mk.x), my = Math.round(mk.y);       // the ₿ on her top
-    put(mx, my - 1, COL.mark); put(mx, my, COL.mark); put(mx, my + 1, COL.mark); put(mx + 1, my - 1, COL.mark); put(mx + 1, my + 1, COL.mark);
-    fillPoly([off(hip, -HPW * 1.15, U * 0.14), off(hip, WAW * 1.3, U * 0.14), off(hip, WAW * 1.25, -U * 0.12), off(hip, -HPW * 1.15, -U * 0.12)], COL.top);   // seat of the shorts
-    // long orange hair falling down her back
-    thick(off(head, -U * 0.12, 0), off(sh, -U * 0.42, -T * 0.55), 3, COL.hairShade);
-    thick(off(head, -U * 0.04, U * 0.04), off(sh, -U * 0.36, -T * 0.3), 3, COL.hair);
-    line(off(head, -U * 0.02, U * 0.08), off(sh, -U * 0.3, -T * 0.1), 1, COL.hairLight);
-    // near leg
-    thick(hip, legs[1 - back].knee, 3, COL.skin); thick(legs[1 - back].knee, legs[1 - back].ft, 2, COL.skin);
-    line(off(hip, U * 0.04, -U * 0.22), off(legs[1 - back].knee, U * 0.04, 0), 1, COL.skinLight);
-    const nf = legs[1 - back].ft;
-    drawFoot(1 - back, COL.skin, COL.skinLight);
-    shortsLeg(legs[1 - back].knee, COL.top);
-    line(off(hip, -HPW * 1.1, U * 0.13), off(hip, WAW * 1.25, U * 0.13), 1, COL.lining);                 // orange waistband
-    // head: face, a big sweep of orange hair, bangs and a gold eye
-    blob(hx + Math.round(-Math.cos(faceAng) * 1.4), hy + Math.round(-Math.sin(faceAng) * 1.4), hr + 1, COL.hair);   // big mane of hair
-    blob(hx + Math.round(-Math.cos(faceAng) * 2), hy + Math.round(-Math.sin(faceAng) * 2), hr, COL.hairShade);
-    blob(hx + Math.round(Math.cos(faceAng) * 1.2), hy + Math.round(Math.sin(faceAng) * 1.2), Math.max(1, hr - 1), COL.skin);   // face at the front
-    for (let a = -2.6; a <= 2.6; a += 0.25) {                                                                       // hair all round except the face
-      if (Math.abs(a) < 1.2) continue;
-      put(hx + Math.round(Math.cos(faceAng + Math.PI + a) * (hr + 1)), hy + Math.round(Math.sin(faceAng + Math.PI + a) * (hr + 1)), COL.hair);
+    if (flight.active) {
+      // flying: the body stretches out at an angle, so it's drawn as shapes along that angle
+      fillPoly([off(sh, -SHW, 0), off(sh, SHW * 0.95, 0), off(hip, WAW, 0), off(hip, -HPW, 0)], COL.skin);
+      fillPoly([off(sh, -SHW * 1.05, U * 0.03), off(sh, SHW * 1.0, U * 0.03), off(sh, SHW * 1.12, -T * 0.3),
+                off(sh, SHW * 0.8, -T * 0.66), off(sh, -SHW * 0.95, -T * 0.64)], COL.top);
+      line(off(sh, SHW * 0.7, -T * 0.66), off(sh, -SHW * 0.9, -T * 0.64), 1, COL.lining);
+      const mk = G(off(sh, SHW * 0.38, -T * 0.36)), mx = Math.round(mk.x), my = Math.round(mk.y);
+      put(mx, my - 1, COL.mark); put(mx, my, COL.mark); put(mx, my + 1, COL.mark); put(mx + 1, my - 1, COL.mark); put(mx + 1, my + 1, COL.mark);
+      fillPoly([off(hip, -HPW * 1.15, U * 0.14), off(hip, WAW * 1.3, U * 0.14), off(hip, WAW * 1.25, -U * 0.12), off(hip, -HPW * 1.15, -U * 0.12)], COL.top);
+    } else {
+      // standing: the hand-drawn upper body. Each row slides over a little so she leans with the push
+      const uc = { O: INK, H: COL.hair, h: COL.hairShade, L: COL.hairLight, S: COL.skin, s: COL.skinShade, l: COL.skinLight,
+                   E: INK, B: '#f6757a', M: '#733e39', T: COL.top, t: '#3a4466', G: COL.mark, R: COL.lining, Y: COL.lining, P: COL.top, p: '#3a4466' };
+      UPPER_SPRITE.forEach((row, r) => [...row].forEach((ch, i) => {
+        if (ch === '.') return;
+        const p = TT.cell(i, r);
+        put(p.x, p.y, uc[ch]); fixedCells.add(p.x + ',' + p.y);
+      }));
     }
-    put(hx + Math.round(-Math.cos(faceAng) * 0.5), hy + Math.round(-Math.sin(faceAng) * 0.5) - 1, COL.hairLight);   // shine
-    const bang = faceAng - 1.2;                                                                                // bangs over the brow
-    put(hx + Math.round(Math.cos(bang) * hr), hy + Math.round(Math.sin(bang) * hr), COL.hairLight);
-    put(hx + Math.round(Math.cos(bang - 0.4) * hr), hy + Math.round(Math.sin(bang - 0.4) * hr), COL.hair);
-    put(hx + Math.round(Math.cos(faceAng - 0.25) * (hr - 1)), hy + Math.round(Math.sin(faceAng - 0.25) * (hr - 1)), COL.eye);
-    // near arm in the jacket sleeve with orange lining at the cuff, hand on the boulder
-    thick(sh, armF.joint, 2, COL.jacket); thick(armF.joint, armF.end, 2, COL.jacket);
-    const cuff = { x: armF.joint.x + (armF.end.x - armF.joint.x) * 0.8, y: armF.joint.y + (armF.end.y - armF.joint.y) * 0.8 };
-    put(Math.round(G(cuff).x), Math.round(G(cuff).y), COL.lining);
-    put(Math.round(G(armF.end).x), Math.round(G(armF.end).y), COL.skin); put(Math.round(G(armF.end).x), Math.round(G(armF.end).y) - 1, COL.skinLight);
-    // jacket hanging off the shoulders, with the fur collar
-    fillPoly([off(sh, -SHW * 1.15, U * 0.05), off(sh, -SHW * 0.2, U * 0.06), off(sh, -SHW * 0.6, -T * 0.6), off(sh, -SHW * 1.3, -T * 0.55)], COL.jacket);
-    line(off(sh, -SHW * 0.55, -T * 0.05), off(sh, -SHW * 0.62, -T * 0.55), 1, COL.lining);
-    line(off(sh, -SHW * 1.2, U * 0.06), off(sh, SHW * 0.1, U * 0.08), 2, COL.fur);
+    // 4) flying only: long hair streaming back
+    if (!TT) {
+      thick(off(head, -U * 0.12, 0), off(sh, -U * 0.42, -T * 0.55), 3, COL.hairShade);
+      thick(off(head, -U * 0.04, U * 0.04), off(sh, -U * 0.36, -T * 0.3), 3, COL.hair);
+      line(off(head, -U * 0.02, U * 0.08), off(sh, -U * 0.3, -T * 0.1), 1, COL.hairLight);
+    }
+    // 5) both shorts openings over the tops of the thighs, then (flying only) the waistband
+    shortsLeg(back, COL.top);
+    shortsLeg(1 - back, COL.top);
+    if (flight.active) line(off(hip, -HPW * 1.1, U * 0.13), off(hip, WAW * 1.25, U * 0.13), 1, COL.lining);
+    // 6) flying only: the profile head from the upper-body sprite (its first 12 rows)
+    if (!TT) {
+      const hc = { O: INK, H: COL.hair, h: COL.hairShade, L: COL.hairLight, S: COL.skin, s: COL.skinShade, l: COL.skinLight, E: INK, B: '#f6757a', M: '#733e39' };
+      UPPER_SPRITE.slice(0, 12).forEach((row, j) => [...row].forEach((ch, i) => {
+        if (ch === '.' || !hc[ch]) return;
+        put(hx - 6 + i, hy - 7 + j, hc[ch]); fixedCells.add((hx - 6 + i) + ',' + (hy - 7 + j));
+      }));
+    }
+    // 7) near arm, in front of everything: reaching up to the boulder, it can pass in front of her face like a real push
+    drawArm(armF, COL.skin, COL.skinLight);
+
+    // Inner lines: a dark edge wherever her hair meets her face or body, and along the edges of her shirt and shorts
+    {
+      const INK = '#181425';
+      const isHair = c => c === COL.hair || c === COL.hairShade || c === COL.hairLight;
+      const isSkin = c => c === COL.skin || c === COL.skinShade || c === COL.skinLight;
+      const ink = [];
+      cells.forEach(([x, y, col], key) => {
+        if (fixedCells.has(key)) return;                                  // the hand-drawn head stays exactly as drawn
+        const nb = [[1, 0], [-1, 0], [0, 1], [0, -1]].map(([i, j]) => cells.get((x + i) + ',' + (y + j))).filter(Boolean).map(c => c[2]);
+        if (isHair(col) && nb.some(c => !isHair(c) && c !== INK)) ink.push([key, x, y]);              // hair outline
+        else if (col === COL.top && nb.some(c => isSkin(c)) && nb.filter(c => c === COL.top || c === COL.mark || c === COL.lining).length >= 3) ink.push([key, x, y]);   // shirt and shorts line, only on the outer edge
+      });
+      ink.forEach(([key, x, y]) => cells.set(key, [x, y, INK]));
+    }
 
     // Outline: every empty neighbour of a filled pixel
     const outline = [];
-    cells.forEach(([x, y]) => [[1, 0], [-1, 0], [0, 1], [0, -1]].forEach(([i, j]) => { const k = (x + i) + ',' + (y + j); if (!cells.has(k)) outline.push([x + i, y + j]); }));
-    const wx = x => cam.x + x * pxs, wy = y => cam.y + y * pxs;
-    ctx.fillStyle = '#181425';
-    outline.forEach(([x, y]) => ctx.fillRect(wx(x), wy(y), pxs, pxs));
-    cells.forEach(([x, y, col]) => { ctx.fillStyle = col; ctx.fillRect(wx(x), wy(y), pxs, pxs); });
+    cells.forEach(([x, y, col]) => { if (col === '#181425') return; [[1, 0], [-1, 0], [0, 1], [0, -1]].forEach(([i, j]) => { const k = (x + i) + ',' + (y + j); if (!cells.has(k)) outline.push([x + i, y + j]); }); });
+    const extra = [];
+    if (moving && !reduceMotion && power.superLevel < 0.5 && Math.floor(time / 420) % 2) extra.push([hx - hr - 1, hy + 1, '#2ce8f5']);   // a bead of sweat
+    // She's painted after the retro pass, straight onto the pixel grid: exact colours, no dithering, no blur
+    spriteLayer = { outline, cells: [...cells.values(), ...extra] };
+  }
 
-    if (moving && !reduceMotion && power.superLevel < 0.5 && Math.floor(time / 420) % 2) {
-      ctx.fillStyle = '#2ce8f5'; ctx.fillRect(wx(hx - hr - 1), wy(hy + 1), pxs, pxs);
+  // Paints the character onto the low-res frame, every cell landing exactly on one screen pixel
+  let spriteLayer = null, frameShake = { x: 0, y: 0 }, boulderRing = null;
+  function paintSprite() {
+    if (!lowW) return;
+    if (boulderRing) {
+      // the boulder's outline: a clean one-pixel black ring hugging its edge
+      const { cx, cy, r } = boulderRing; boulderRing = null;
+      const x0 = Math.floor(cx - r - 2), y0 = Math.floor(cy - r - 2), n = Math.ceil(r * 2 + 4);
+      const ox = Math.round((x0 * pxs + frameShake.x) * lowW / W), oy = Math.round((y0 * pxs + frameShake.y) * lowH / H);
+      ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0); ctx.fillStyle = '#181425';
+      for (let j = 0; j <= n; j++) for (let i = 0; i <= n; i++) {
+        const d = Math.hypot(x0 + i + 0.5 - cx, y0 + j + 0.5 - cy);
+        if (d >= r - 0.15 && d < r + 0.85) ctx.fillRect(ox + i, oy + j, 1, 1);
+      }
+      ctx.restore();
     }
+    if (!spriteLayer) return;
+    const { outline, cells } = spriteLayer; spriteLayer = null;
+    if (!cells.length) return;
+    let mx = Infinity, my = Infinity;
+    outline.forEach(([x, y]) => { if (x < mx) mx = x; if (y < my) my = y; });
+    const ox = Math.round((mx * pxs + frameShake.x) * lowW / W), oy = Math.round((my * pxs + frameShake.y) * lowH / H);
+    ctx.save(); ctx.setTransform(1, 0, 0, 1, 0, 0);
+    ctx.fillStyle = '#181425';
+    outline.forEach(([x, y]) => ctx.fillRect(ox + x - mx, oy + y - my, 1, 1));
+    cells.forEach(([x, y, col]) => { ctx.fillStyle = col; ctx.fillRect(ox + x - mx, oy + y - my, 1, 1); });
+    ctx.restore();
   }
 
   // ---------- Breakthrough: smashed rock debris ----------
@@ -3025,6 +3221,8 @@
     // warm rim light
     ctx.strokeStyle = `rgba(255,206,150,${0.25 + 0.5 * p})`; ctx.lineWidth = 2;
     ctx.beginPath(); ctx.arc(c.x, c.y, R - 1, -Math.PI * 0.75, -Math.PI * 0.05); ctx.stroke();
+    // thin black outline, one pixel wide: painted pixel-exact after the retro pass (see paintSprite)
+    if (pxs) boulderRing = { cx: (c.x - cam.x) / pxs, cy: (c.y - cam.y) / pxs, r: R / pxs };
   }
 
   // Buying vs selling over the last 30 seconds, from -1 (all sells) to +1 (all buys)
@@ -3085,7 +3283,7 @@
   // ---------- Launch countdown (shown until COIN_MINT is set) ----------
   function setupCountdown() {
     const at = Date.parse(SITE.launchAt || '');
-    if (!at || COIN_MINT || document.body.classList.contains('guest')) return;
+    if (!at || COIN_MINT || PREVIEW_MINT || document.body.classList.contains('guest')) return;
     $('#countdown').hidden = false;
     const when = new Date(at).toLocaleString(undefined, { weekday: 'long', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', timeZoneName: 'short' });
     $('#cdLabel').textContent = SITE.ticker + ' launches on pump.fun ' + when;
@@ -3144,7 +3342,14 @@
   }
   loadBurns(); setInterval(loadBurns, 120000);
 
-  let startMint = params.get('mint') || COIN_MINT;
+  if (PREVIEW_MINT) {
+    document.body.classList.add('live-preview', 'hide-dev');
+    const bar = document.createElement('div');
+    bar.className = 'preview-bar';
+    bar.textContent = 'Live preview: the game is running on another coin’s real trades so you can see the live look. $BOULDER launches Thursday. Trading is off on this page.';
+    document.body.prepend(bar);
+  }
+  let startMint = PREVIEW_MINT || params.get('mint') || COIN_MINT;
   if (startMint && !inPreview) { $('#mint').value = startMint; goLive(startMint); }
   else startDemo();
   requestAnimationFrame(loop);
