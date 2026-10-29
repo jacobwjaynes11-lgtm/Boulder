@@ -3,8 +3,16 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-<title>Push the Boulder</title>
-<meta name="description" content="A meme coin paired with Bitcoin, with a game strapped to it: every buy pushes The Boulder Holders up the mountain, every sell lets the boulder slide back, and 3% of every trade is paid to holders in BTC.">
+<title>Boulder ($BOULDER) · Push the Boulder. Earn BTC.</title>
+<meta name="description" content="Boulder is a meme coin on Solana, paired with Bitcoin, with a live game strapped to it. Every buy pushes the boulder up the mountain, every sell lets it slide back, and 3% of every trade goes to holders in BTC.">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="bouldr.fun">
+<meta property="og:title" content="Boulder ($BOULDER) · Push the Boulder. Earn BTC.">
+<meta property="og:description" content="A meme coin paired with Bitcoin, with a live game strapped to it. 3% of every trade goes to holders in BTC.">
+<meta property="og:url" content="https://bouldr.fun/">
+<meta name="twitter:card" content="summary">
+<meta name="theme-color" content="#0e0c09">
+<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2032%2032%22%3E%3Ccircle%20cx%3D%2216%22%20cy%3D%2216%22%20r%3D%2214%22%20fill%3D%22%235a6988%22%20stroke%3D%22%23181425%22%20stroke-width%3D%222%22%2F%3E%3Ccircle%20cx%3D%2212%22%20cy%3D%2211%22%20r%3D%224%22%20fill%3D%22%238b9bb4%22%2F%3E%3Ctext%20x%3D%2216.5%22%20y%3D%2222%22%20font-family%3D%22Arial%22%20font-weight%3D%22700%22%20font-size%3D%2214%22%20text-anchor%3D%22middle%22%20fill%3D%22%23f7931a%22%3E%E2%82%BF%3C%2Ftext%3E%3C%2Fsvg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -62,7 +70,7 @@
   canvas { display: block; width: 100%; height: 100%; image-rendering: pixelated; image-rendering: crisp-edges; }
   #fx { position: absolute; inset: 0; pointer-events: none; image-rendering: auto; }
   .alt { font-family: "Press Start 2P", ui-monospace, monospace !important; font-weight: 400 !important; font-size: clamp(24px, 4.6vw, 46px) !important; line-height: 1.15 !important; text-shadow: 3px 3px 0 #181425 !important; }
-  .sub, .mode { font-family: "Press Start 2P", ui-monospace, monospace; font-size: 10px !important; letter-spacing: .02em; }
+  .hud .sub, .mode { font-family: "Press Start 2P", ui-monospace, monospace; font-size: 10px !important; letter-spacing: .02em; }
   .stage { border-radius: 6px !important; image-rendering: pixelated; }
   .hud {
     position: absolute; left: 0; right: 0; top: 0; padding: 22px 24px 60px;
@@ -74,7 +82,7 @@
     line-height: 1; letter-spacing: .01em; text-shadow: 0 2px 24px rgba(10, 6, 30, .5);
     font-variant-numeric: lining-nums;
   }
-  .sub { font-size: 15px; opacity: .85; margin-top: 8px; }
+  .hud .sub { font-size: 15px; opacity: .85; margin-top: 8px; }
   .mode {
     position: absolute; right: 18px; top: 20px; font-size: 13px; font-weight: 500;
     color: #fff8ec; background: rgba(255, 255, 255, .1); border: 1px solid rgba(255, 255, 255, .18);
@@ -272,6 +280,61 @@
 
   .disclaimer { font-size: 13px; color: var(--muted); max-width: 80ch; margin: 0; }
   .site-footer .brand { font-size: 18px; }
+  .foot-grid { display: grid; gap: 28px; grid-template-columns: 1.4fr 1fr 1fr; padding-bottom: 22px; border-bottom: 1px solid var(--line); }
+  .foot-brand p { color: var(--muted); font-size: 15px; margin: 10px 0 14px; max-width: 38ch; }
+  .foot-col { display: grid; align-content: start; gap: 9px; }
+  .foot-col h4 { margin: 0 0 4px; font-size: 13px; text-transform: uppercase; letter-spacing: .08em; color: var(--muted); }
+  .foot-col a { color: var(--ink); font-size: 15px; text-decoration: none; }
+  .foot-col a:hover { color: var(--accent-text); }
+  .site-footer .disclaimer { color: var(--muted); font-size: 13px; line-height: 1.55; max-width: 92ch; margin: 6px 0 0; }
+  .site-footer .copy { color: var(--muted); font-size: 13px; margin: 0; }
+  @media (max-width: 760px) { .foot-grid { grid-template-columns: 1fr 1fr; } .foot-brand { grid-column: 1 / -1; } }
+  /* hero trust strip */
+  .trust { list-style: none; display: flex; flex-wrap: wrap; gap: 8px 18px; padding: 0; margin: 18px 0 0; color: var(--muted); font-size: 14px; }
+  .trust li { display: flex; align-items: center; gap: 8px; }
+  .trust li::before { content: ""; width: 7px; height: 7px; border-radius: 50%; background: var(--accent); flex: none; }
+  /* demo labels in the sidebar */
+  .demo-note { grid-column: 1 / -1; margin: 0; font-size: 13px; color: var(--accent-text); font-weight: 600; }
+  .feed-h { display: flex; align-items: center; gap: 10px; }
+  .feed-h .chip { margin-left: auto; }
+  /* milestones */
+  .ms-next { margin: 26px 0 18px; padding: 20px 22px; border: 1px solid var(--line); border-radius: 18px; background: var(--panel); display: grid; gap: 10px; max-width: 760px; }
+  .ms-next-h { display: flex; align-items: baseline; gap: 12px; }
+  .ms-next-h span { color: var(--muted); font-size: 14px; }
+  .ms-next-h b, .ms-next > b { font-family: var(--display); font-size: 28px; color: var(--accent-text); }
+  .ms-next small { color: var(--muted); font-size: 14px; }
+  .ms-grid { list-style: none; padding: 0; margin: 0; display: grid; gap: 10px; grid-template-columns: repeat(auto-fill, minmax(118px, 1fr)); }
+  .ms { display: grid; gap: 2px; padding: 12px 14px; border: 1px solid var(--line); border-radius: 14px; background: var(--panel); }
+  .ms b { font-family: var(--display); font-size: 20px; }
+  .ms span { font-size: 12px; text-transform: uppercase; letter-spacing: .06em; color: var(--muted); font-weight: 700; }
+  .ms.reached { border-color: color-mix(in srgb, var(--buy) 55%, var(--line)); }
+  .ms.reached span { color: var(--buy); }
+  .ms.next { border-color: var(--accent); }
+  .ms.next span, .ms.next b { color: var(--accent-text); }
+  .ms a { font-size: 13px; color: var(--burn); font-weight: 600; }
+  /* fees & facts */
+  .facts { display: grid; gap: 12px; grid-template-columns: repeat(3, 1fr); margin: 26px 0 0; }
+  @media (max-width: 980px) { .facts { grid-template-columns: 1fr 1fr; } }
+  @media (max-width: 600px) { .facts { grid-template-columns: 1fr; } }
+  .facts > div { padding: 18px 20px; border: 1px solid var(--line); border-radius: 16px; background: var(--panel); }
+  .facts dt { color: var(--muted); font-size: 13px; text-transform: uppercase; letter-spacing: .07em; font-weight: 700; }
+  .facts dd { margin: 6px 0 0; font-family: var(--display); font-size: 19px; font-weight: 600; overflow-wrap: anywhere; }
+  .facts dd small { display: block; margin-top: 6px; font-family: inherit; font-weight: 400; font-size: 14px; color: var(--muted); line-height: 1.45; }
+  #factCa { font-variant-numeric: tabular-nums; }
+  .verify { display: flex; flex-wrap: wrap; align-items: center; gap: 10px 14px; margin-top: 16px; font-size: 15px; }
+  .verify span { color: var(--muted); }
+  .verify a { padding: 7px 12px; border: 1px solid var(--line); border-radius: 99px; color: var(--ink); background: var(--panel); }
+  .verify a:hover { border-color: var(--accent); text-decoration: none; }
+  /* FAQ */
+  .faq { margin-top: 22px; display: grid; gap: 10px; max-width: 860px; }
+  .faq details { border: 1px solid var(--line); border-radius: 14px; background: var(--panel); padding: 0 20px; }
+  .faq summary { cursor: pointer; list-style: none; padding: 17px 0; font-weight: 600; font-size: 17px; display: flex; justify-content: space-between; gap: 16px; }
+  .faq summary::-webkit-details-marker { display: none; }
+  .faq summary::after { content: "+"; color: var(--accent-text); font-size: 22px; line-height: 1; }
+  .faq details[open] summary::after { content: "–"; }
+  .faq details p { margin: 0 0 18px; color: var(--muted); line-height: 1.6; }
+  .faq a { color: var(--accent-text); }
+  body.guest #facts, body.guest #faq, body.guest [data-boulder-only], body.guest a[href="#facts"], body.guest a[href="#faq"] { display: none !important; }
   @media (max-width: 760px) { .site-footer .in { padding: 28px 16px 40px; } }
 
   button.small { padding: 6px 11px; font-size: 13px; }
@@ -346,14 +409,14 @@
   <div class="in">
     <a class="brand" href="#top" data-site="ticker">$BOULDER</a>
     <nav class="nav" aria-label="Sections">
-      <a href="#play">Play</a>
-      <a href="#how">How it works</a>
+      <a href="#how">How It Works</a>
       <a href="#rewards">Earn BTC</a>
       <a href="#burn">The Burn</a>
-      <a href="#plan">Burn plan</a>
-      <a href="#buy">How to buy</a>
-      <a href="#launch">Your coin</a>
-      <a href="?demo=1#play" id="demoLink">Try the demo</a>
+      <a href="#plan">Milestones</a>
+      <a href="#facts">Fees &amp; Facts</a>
+      <a href="#buy">How to Buy</a>
+      <a href="#faq">FAQ</a>
+      <a href="?demo=1#play" id="demoLink">Try the Demo</a>
     </nav>
     <a class="btn buy-link" href="#buy" target="_blank" rel="noopener">Buy</a>
   </div>
@@ -361,7 +424,7 @@
 
 <div class="hero" id="top">
   <h1>Push the boulder. <span class="earn">Earn BTC.</span></h1>
-  <p id="heroText"><span data-site="name">Boulder</span> is a meme coin paired with Bitcoin, with a game strapped to it. Every buy pushes The Boulder Holders up the mountain, every sell lets the boulder slide back, and 3% of every trade is paid to holders in BTC. They never reach the top. That’s the point.</p>
+  <p id="heroText"><span data-site="name">Boulder</span> is a meme coin paired with Bitcoin, with a game strapped to it. Every buy pushes The Boulder Holders up the mountain, every sell lets the boulder slide back, and 3% of every trade goes to holders in BTC. They never reach the top. That’s the point.</p>
   <div class="cta">
     <a class="btn buy-link" href="#buy" target="_blank" rel="noopener">Buy <span data-site="ticker">$BOULDER</span></a>
     <span class="ca-chip" data-ca-wrap hidden>CA <code data-ca></code><button class="ghost small" data-copy-ca>Copy</button></span>
@@ -377,6 +440,9 @@
       </div>
     </span>
   </div>
+  <ul class="trust" data-boulder-only>
+    <li>Fair launch on pump.fun</li><li>No presale</li><li>3% to holders in BTC</li><li>Every burn checkable on-chain</li>
+  </ul>
   <div class="socials hero-socials" id="heroSocials" hidden></div>
   <div class="countdown" id="countdown" hidden>
     <p class="cd-label" id="cdLabel">Launching soon</p>
@@ -404,17 +470,17 @@
 
   <section class="pulse" id="pulse" aria-label="Live market">
     <div class="card pushers">
-      <div class="card-h"><h3>Top pushers today</h3><span class="chip" data-demo-chip hidden>Demo</span></div>
+      <div class="card-h"><h3>Top Pushers Today</h3><span class="chip" data-demo-chip hidden>Demo</span></div>
       <ol id="pushers"><li class="empty">The biggest buyers today show up here.</li></ol>
     </div>
     <div class="card rewards" id="rewardsCard">
-      <div class="card-h"><h3>Paid to holders in BTC</h3><span class="chip" data-demo-chip hidden>Demo</span></div>
+      <div class="card-h"><h3>Paid to Holders in BTC</h3><span class="chip" data-demo-chip hidden>Demo</span></div>
       <b id="rewardUsd">$0</b>
       <p id="rewardNote">An estimate: 3% of the last 24 hours of trading, shared by every wallet holding $20 or more.</p>
       <a class="more" href="#rewards">How holder rewards work</a>
     </div>
     <div class="card chart">
-      <div class="card-h"><h3>Market cap</h3><span class="range" id="chartRange">last hour</span><span class="chip" data-demo-chip hidden>Demo</span></div>
+      <div class="card-h"><h3>Market Cap</h3><span class="range" id="chartRange">last hour</span><span class="chip" data-demo-chip hidden>Demo</span></div>
       <canvas id="mcChart" width="320" height="96" aria-label="Market cap over the last hour"></canvas>
       <div class="chart-foot"><span id="chartLow">Low —</span><span id="chartNow">Now —</span><span id="chartHigh">High —</span></div>
     </div>
@@ -452,10 +518,11 @@
         <a class="pump" id="pumpLink" target="_blank" rel="noopener" hidden>View on pump.fun</a>
       </div>
       <p class="status" id="tradeStatus"></p>
-      <p class="fine" id="tradeFine">Trades are built by PumpPortal (0.5% fee) and signed in your own wallet; this page never sees your keys. Meme coins are extremely risky. Only trade what you can afford to lose.</p>
+      <p class="fine" id="tradeFine">Trades go through PumpPortal and are signed in your own wallet. bouldr.fun never sees your keys or recovery phrase. Meme coins are extremely risky: only trade what you can afford to lose.</p>
     </section>
 
     <section class="stats">
+      <p class="demo-note" data-demo-chip hidden>Demo data: made-up trades until the coin launches.</p>
       <div>Market cap<b id="sMc">—</b></div>
       <div>Peak market cap<b id="sAth">—</b></div>
       <div>Volume<b id="sVol">0 SOL</b></div>
@@ -466,7 +533,7 @@
     </section>
 
     <section class="feed">
-      <h2>Activity</h2>
+      <div class="feed-h"><h2>Activity</h2><span class="chip" data-demo-chip hidden>Demo</span></div>
       <ol id="feed"><li class="empty">Buys, sells and burns show up here as they happen.</li></ol>
     </section>
 
@@ -496,24 +563,24 @@
 </main>
 
 <section class="page" id="how">
-  <h2 class="big">How the climb works</h2>
+  <h2 class="big">How the Climb Works</h2>
   <p class="sub">The game runs on the coin’s live trades. Nothing is scripted; the mountain only moves when the market does.</p>
   <div class="cols">
-    <div><h3><span class="tag" style="background: var(--buy)"></span>Buys push</h3><p>Every buy pushes the boulder uphill. Her height is the coin’s live market cap, so the bigger the pump, the further she climbs.</p></div>
-    <div><h3><span class="tag" style="background: var(--sell)"></span>Sells slide</h3><p>Every sell lets the boulder grind back down while she digs in her heels. Paper hands have consequences.</p></div>
-    <div><h3><span class="tag" style="background: var(--burn)"></span>Pumps set the boulder ablaze</h3><p>Any 3% upswing sets the boulder on fire: the price jumping 3% in a minute, a single buy that moves it 3%, or trading volume climbing 3% on the minute before. Burns light it up too.</p></div>
-    <div><h3><span class="tag" style="background: #f7931a"></span>Holders earn BTC</h3><p>3% of every trade is paid to holders with $20 or more, in Bitcoin, several times an hour. Hold more, earn more.</p></div>
-    <div><h3><span class="tag" style="background: var(--accent)"></span>Big buys hit different</h3><p>A 1 SOL buy triggers a mighty heave. 5 SOL gives her super strength, 10 SOL sends her flying, and 15 SOL smashes her straight through the boulder.</p></div>
-    <div><h3><span class="tag" style="background: #fee761"></span>Milestones go off</h3><p>Every time the market cap passes a new milestone for the first time, fireworks fill the sky and the whole site celebrates.</p></div>
+    <div><h3><span class="tag" style="background: var(--buy)"></span>Buys Push</h3><p>Every buy pushes the boulder uphill. Her height is the coin’s live market cap, so the bigger the pump, the further she climbs.</p></div>
+    <div><h3><span class="tag" style="background: var(--sell)"></span>Sells Slide</h3><p>Every sell lets the boulder grind back down while she digs in her heels. Paper hands have consequences.</p></div>
+    <div><h3><span class="tag" style="background: var(--burn)"></span>Pumps Set the Boulder Ablaze</h3><p>Any 3% upswing sets the boulder on fire: the price jumping 3% in a minute, a single buy that moves it 3%, or trading volume climbing 3% on the minute before. Burns light it up too.</p></div>
+    <div><h3><span class="tag" style="background: #f7931a"></span>Holders Earn BTC</h3><p>3% of every trade fills a rewards vault that pump.fun pays out in Bitcoin to everyone holding $20 or more. Hold more, earn more.</p></div>
+    <div><h3><span class="tag" style="background: var(--accent)"></span>Big Buys Hit Different</h3><p>A 1 SOL buy triggers a mighty heave. 5 SOL gives her super strength, 10 SOL sends her flying, and 15 SOL smashes her straight through the boulder.</p></div>
+    <div><h3><span class="tag" style="background: #fee761"></span>Milestones Go Off</h3><p>Every time the market cap passes a new milestone for the first time, fireworks fill the sky and the whole site celebrates.</p></div>
   </div>
 </section>
 
 <section class="page" id="rewards">
   <div class="burn-wrap">
     <div>
-      <h2 class="big">Hold it, earn BTC</h2>
-      <p><span data-site="ticker">$BOULDER</span> trades against Bitcoin. 3% of every buy and every sell goes to holders, paid in wrapped BTC straight to your wallet several times an hour. Nothing to claim or stake: just hold at least $20 worth.</p>
-      <p>Pump.fun runs the payouts automatically and splits them by how much you hold, so the bigger your bag, the bigger your share. Payouts come from trading, so they aren’t guaranteed and can be zero in quiet hours.</p>
+      <h2 class="big">Hold It, Earn BTC</h2>
+      <p><span data-site="ticker">$BOULDER</span> trades against Bitcoin. 3% of every buy and every sell goes into a rewards vault, and pump.fun pays it out automatically, in wrapped BTC, to every wallet holding at least $20 worth. Nothing to claim, nothing to stake.</p>
+      <p>Payouts are split by how much you hold: the bigger your bag, the bigger your share. They go out as trading fills the vault, so busy hours pay more, quiet hours can pay nothing, and a small part of each payout covers the network costs of sending it.</p>
     </div>
     <div class="burn-nums">
       <div>Holder rewards<b>3%</b></div>
@@ -548,24 +615,58 @@
 </section>
 
 <section class="page" id="plan">
-  <h2 class="big">Burn plan</h2>
-  <p class="sub">The 0.5% site fee from trades on bouldr.fun buys the coin back and burns it every hour from launch. These market caps are the milestones on the climb. Once each one is reached, the burning carries on hour after hour, and the more people trade here, the more gets burned.</p>
-  <ol class="plan-list" id="planList"></ol>
+  <h2 class="big">Milestones</h2>
+  <p class="sub">The market caps on the climb. Each one sets off fireworks the first time it’s reached, and the hourly buyback and burn keeps running the whole way up.</p>
+  <div class="ms-next" id="msNext"></div>
+  <ol class="ms-grid" id="planList"></ol>
   <p class="plan-regular" id="planRegular"></p>
 </section>
 
+<section class="page" id="facts">
+  <h2 class="big">Fees &amp; Facts</h2>
+  <p class="sub">Everything about how <span data-site="ticker">$BOULDER</span> works, in one place. All of it can be checked on-chain.</p>
+  <dl class="facts">
+    <div><dt>Launch</dt><dd>Fair launch on pump.fun<small>No presale.</small></dd></div>
+    <div><dt>Paired with</dt><dd>Bitcoin<small>Trades against wrapped BTC on Solana.</small></dd></div>
+    <div><dt>Holder rewards</dt><dd>3% of every trade<small>Paid in BTC by pump.fun to every wallet holding $20 or more.</small></dd></div>
+    <div><dt>Site fee</dt><dd>0.5%, only on trades made on bouldr.fun<small>Funds the hourly buyback and burn. Buying on pump.fun directly doesn’t include it. Pump.fun’s standard fees apply either way.</small></dd></div>
+    <div><dt>Starting supply</dt><dd>1,000,000,000<small>Burns only ever take it down.</small></dd></div>
+    <div><dt>Contract address</dt><dd><span id="factCa">Published at launch</span><small id="factCaNote">It will appear here, in the menu bar and on pump.fun the moment the coin goes live.</small></dd></div>
+  </dl>
+  <div class="verify" id="verifyLinks" hidden>
+    <span>Verify it yourself:</span>
+    <a id="vSolscan" target="_blank" rel="noopener">Token on Solscan</a>
+    <a id="vPump" target="_blank" rel="noopener">pump.fun page</a>
+    <a id="vDex" target="_blank" rel="noopener">DexScreener chart</a>
+    <a id="vBurn" target="_blank" rel="noopener" hidden>Burn wallet</a>
+  </div>
+</section>
+
 <section class="page" id="buy">
-  <h2 class="big">How to buy</h2>
+  <h2 class="big">How to Buy</h2>
   <p class="sub">It takes a couple of minutes the first time.</p>
   <ol class="steps">
-    <li><h3>Get a Solana wallet</h3><p>Install Phantom, Solflare or Backpack on your phone or browser and write down your recovery phrase somewhere safe.</p></li>
+    <li><h3>Get a Solana Wallet</h3><p>Install Phantom, Solflare or Backpack on your phone or browser and write down your recovery phrase somewhere safe.</p></li>
     <li><h3>Add SOL</h3><p>Buy SOL in your wallet app or on an exchange, then send it to your wallet address.</p></li>
-    <li><h3>Connect and push</h3><p>Connect your wallet in the Trade panel above and tap a quick buy, or buy on pump.fun. Then watch her climb.</p></li>
+    <li><h3>Connect and Push</h3><p>Connect your wallet in the Trade panel above and tap a quick buy, or buy on pump.fun. Then watch her climb.</p></li>
   </ol>
 </section>
 
+<section class="page" id="faq">
+  <h2 class="big">FAQ</h2>
+  <div class="faq">
+    <details><summary><span>What is <span data-site="ticker">$BOULDER</span>?</span></summary><p>A meme coin on Solana, paired with Bitcoin, with a live game on this site. Every real buy pushes the boulder up the mountain and every sell lets it slide back, and 3% of every trade goes to holders in BTC. It has no intrinsic value; it’s for fun.</p></details>
+    <details><summary>How do I earn BTC?</summary><p>Hold at least $20 worth. Pump.fun collects 3% of every trade into a rewards vault and pays it out to every qualifying wallet in wrapped BTC, split by how much you hold. There’s nothing to claim or stake. Payouts depend entirely on trading, so they aren’t guaranteed.</p></details>
+    <details><summary>What fees are there?</summary><p>Every trade pays the 3% holder reward plus pump.fun’s standard fees. Trades made through the panel on bouldr.fun also include a 0.5% site fee, which a bot uses every hour to buy back and burn <span data-site="ticker">$BOULDER</span>. Buying on pump.fun directly skips the site fee.</p></details>
+    <details><summary>Is it safe to connect my wallet here?</summary><p>Trades are built by PumpPortal and signed in your own wallet; bouldr.fun never sees your keys or recovery phrase, and nothing happens until you approve it in your wallet. Never share your recovery phrase with anyone, including anyone claiming to be from Boulder.</p></details>
+    <details><summary>Where can I check the burns?</summary><p>Every buyback and burn happens from one public burn wallet, and each burn is a transaction anyone can look up on Solscan. Once the coin is live, the Recent burns list links straight to each one, and the links under Fees &amp; Facts take you to the token and the burn wallet.</p></details>
+    <details><summary>Is the game real?</summary><p>Yes. Once the coin is live, the game runs on real on-chain trades: nothing is scripted, and the mountain only moves when the market does. Before launch, the page shows a clearly labeled demo with made-up trades, and you can try every effect yourself on the <a href="?demo=1#play">demo page</a>.</p></details>
+    <details><summary>Is this financial advice?</summary><p>No. Nothing on this site is financial advice. Meme coins are extremely volatile and you can lose everything you put in, so only use money you can afford to lose.</p></details>
+  </div>
+</section>
+
 <section class="page launch-page" id="launch">
-      <h2 class="big">Put the boulder on your coin</h2>
+      <h2 class="big">Put the Boulder on Your Coin</h2>
       <p class="lede">Launch a coin on pump.fun, then paste its contract address to get your own boulder page, with live trades and trading built in.</p>
       <a class="btn" href="https://pump.fun/create" target="_blank" rel="noopener">Launch a coin on pump.fun</a>
       <label for="launchMint">Your coin’s contract address</label>
@@ -581,10 +682,24 @@
 
 <footer class="site-footer">
   <div class="in">
-    <a class="brand" href="#top" data-site="ticker">$BOULDER</a>
-    <div class="socials" id="socials"></div>
-    <span class="ca-chip" data-ca-wrap hidden>CA <code data-ca></code><button class="ghost small" data-copy-ca>Copy</button></span>
+    <div class="foot-grid">
+      <div class="foot-brand">
+        <a class="brand" href="#top" data-site="ticker">$BOULDER</a>
+        <p>Push the boulder. Earn BTC. A meme coin on Solana with a live game strapped to it.</p>
+        <div class="socials" id="socials"></div>
+        <span class="ca-chip" data-ca-wrap hidden>CA <code data-ca></code><button class="ghost small" data-copy-ca>Copy</button></span>
+      </div>
+      <nav class="foot-col" aria-label="Explore">
+        <h4>Explore</h4>
+        <a href="#how">How It Works</a><a href="#rewards">Earn BTC</a><a href="#burn">The Burn</a><a href="#plan">Milestones</a><a href="?demo=1#play">Try the Demo</a>
+      </nav>
+      <nav class="foot-col" aria-label="Information">
+        <h4>Information</h4>
+        <a href="#facts">Fees &amp; Facts</a><a href="#buy">How to Buy</a><a href="#faq">FAQ</a><a href="#launch">Put the Boulder on Your Coin</a>
+      </nav>
+    </div>
     <p class="disclaimer"><span data-site="ticker">$BOULDER</span> is a meme coin with no intrinsic value. Holder rewards are paid automatically by pump.fun from trading fees; they depend entirely on trading activity, aren’t guaranteed, and can be zero. Nothing on this site is financial advice. Crypto is volatile and you can lose everything you put in, so only use what you can afford to lose.</p>
+    <p class="copy">© 2026 Boulder · bouldr.fun</p>
   </div>
 </footer>
 
@@ -985,7 +1100,7 @@
     else {
       const hourUsd = volumeSince(3600000) * solUsd * 0.03 * pct / 100;
       note.textContent = hourUsd > 0
-        ? `At the last hour’s trading pace that’s at least ${hourUsd >= 1 ? usd(hourUsd) : '$' + hourUsd.toFixed(2)} in BTC an hour. An estimate, not a promise: payouts depend on trading.`
+        ? `At the last hour’s trading pace, that’s roughly ${hourUsd >= 1 ? usd(hourUsd) : '$' + hourUsd.toFixed(2)} in BTC an hour, before payout costs. An estimate, not a promise: payouts depend on trading.`
         : 'You qualify. Payouts arrive in your wallet as BTC whenever there’s trading.';
     }
   }
@@ -1492,7 +1607,7 @@
     return new W3.VersionedTransaction(tm.compileToV0Message(alts));
   }
   if (siteFeeOn()) {
-    $('#tradeFine').textContent = `Trades are built by PumpPortal (0.5% fee) and signed in your own wallet; this page never sees your keys. Trades here also include a ${SITE_FEE.pct}% site fee that goes to the ${SITE_FEE.ticker} burn wallet and is only ever used to buy back and burn ${SITE_FEE.ticker}. Meme coins are extremely risky. Only trade what you can afford to lose.`;
+    $('#tradeFine').textContent = `Trades go through PumpPortal and are signed in your own wallet. bouldr.fun never sees your keys or recovery phrase. Trades here include a ${SITE_FEE.pct}% site fee that goes to the public burn wallet and is only used to buy back and burn ${SITE_FEE.ticker}. Meme coins are extremely risky: only trade what you can afford to lose.`;
   }
 
   if (SITE.burnWallet) {
@@ -1527,6 +1642,20 @@
     document.querySelectorAll('[data-ca-wrap]').forEach(el => el.hidden = !coin);
     document.querySelectorAll('[data-ca-soon]').forEach(el => el.hidden = !!coin);
     document.querySelectorAll('[data-ca]').forEach(el => el.textContent = coin ? shortAddr(coin) : '');
+    const fc = $('#factCa'), vl = $('#verifyLinks');
+    if (fc) {
+      fc.textContent = coin || 'Published at launch';
+      $('#factCaNote').textContent = coin ? 'Always check the address matches before you buy.' : 'It will appear here, in the menu bar and on pump.fun the moment the coin goes live.';
+    }
+    if (vl) {
+      vl.hidden = !coin;
+      if (coin) {
+        $('#vSolscan').href = 'https://solscan.io/token/' + coin;
+        $('#vPump').href = 'https://pump.fun/coin/' + coin;
+        $('#vDex').href = 'https://dexscreener.com/solana/' + coin;
+        const vb = $('#vBurn'); vb.hidden = !SITE.burnWallet; if (SITE.burnWallet) vb.href = 'https://solscan.io/account/' + SITE.burnWallet;
+      }
+    }
   }
   document.querySelectorAll('[data-copy-ca]').forEach(b => b.onclick = async () => {
     const coin = PREVIEW_MINT ? COIN_MINT : (mint || COIN_MINT);
@@ -1612,7 +1741,7 @@
   // `at` is the market cap in USD. After you burn at a step, paste the burn's Solscan link into `tx`
   // and that step shows as burned with a link holders can check.
   const BURN_PLAN = {
-    regular: 'Every burn shows up under Recent burns with its transaction, so you can check each one yourself.',
+    regular: 'Every burn is an on-chain transaction, listed under Recent burns once the coin is live so you can check each one yourself.',
     steps: [
       { at: 10_000,     title: 'First milestone',     detail: 'The hourly buyback and burn is well underway.', tx: '' },
       { at: 25_000,     title: 'Burn',                detail: 'Hourly burns keep going past this point.', tx: '' },
@@ -1634,34 +1763,30 @@
     $('#planRegular').textContent = BURN_PLAN.regular || '';
     list.innerHTML = '';
     let nextFound = false;
-    BURN_PLAN.steps.forEach((st, i) => {
-      let status, cls;
-      if (st.tx) { status = 'Burned'; cls = 'done'; }
-      else if (ath >= st.at) { status = 'Reached, still burning'; cls = 'reached'; }
-      else if (!nextFound) { status = 'Next'; cls = 'next'; nextFound = true; }
-      else { status = 'Planned'; cls = ''; }
+    const next = BURN_PLAN.steps.find(st => !(ath >= st.at));
+    BURN_PLAN.steps.forEach(st => {
+      const reached = ath >= st.at, isNext = st === next;
       const li = document.createElement('li');
-      li.className = 'plan-item' + (cls === 'next' ? ' is-next' : cls === 'done' ? ' is-done' : '');
-      const m = document.createElement('div'); m.className = 'plan-mc'; m.textContent = usd(st.at);
-      const body = document.createElement('div'); body.className = 'plan-body';
-      const h = document.createElement('h3'); h.textContent = st.title;
-      const d = document.createElement('p'); d.textContent = st.detail + ' ';
-      if (st.tx) { const a = document.createElement('a'); a.href = st.tx; a.target = '_blank'; a.rel = 'noopener'; a.textContent = 'View the burn'; d.append(a); }
-      body.append(h, d);
-      const pill = document.createElement('span'); pill.className = 'pill ' + cls; pill.textContent = status;
-      li.append(m, body, pill);
-      if (cls === 'next') {
-        const prev = i > 0 ? BURN_PLAN.steps[i - 1].at : Math.min(3000, st.at / 2);
-        const frac = mc > prev ? Math.min(1, Math.log(mc / prev) / Math.log(st.at / prev)) : 0;
-        const prog = document.createElement('div'); prog.className = 'plan-progress';
-        const bar = document.createElement('div'); bar.className = 'plan-bar';
-        const fill = document.createElement('i'); fill.style.width = Math.round(frac * 100) + '%'; bar.append(fill);
-        const note = document.createElement('small');
-        note.textContent = mc ? `Market cap ${usd(mc)} of ${usd(st.at)}` : 'Waiting for the first trade';
-        prog.append(bar, note); li.append(prog);
-      }
+      li.className = 'ms' + (reached ? ' reached' : isNext ? ' next' : '');
+      li.append(Object.assign(document.createElement('b'), { textContent: usd(st.at) }),
+                Object.assign(document.createElement('span'), { textContent: reached ? 'Reached' : isNext ? 'Next' : 'Ahead' }));
+      if (st.tx) li.append(Object.assign(document.createElement('a'), { href: st.tx, target: '_blank', rel: 'noopener', textContent: 'View burn' }));
       list.append(li);
     });
+    const box = $('#msNext');
+    if (box) {
+      box.textContent = '';
+      if (next) {
+        const i = BURN_PLAN.steps.indexOf(next), prev = i > 0 ? BURN_PLAN.steps[i - 1].at : Math.min(3000, next.at / 2);
+        const frac = mc > prev ? Math.min(1, Math.log(mc / prev) / Math.log(next.at / prev)) : 0;
+        const head = document.createElement('div'); head.className = 'ms-next-h';
+        head.append(Object.assign(document.createElement('span'), { textContent: 'Next milestone' }), Object.assign(document.createElement('b'), { textContent: usd(next.at) }));
+        const bar = document.createElement('div'); bar.className = 'plan-bar';
+        const fill = document.createElement('i'); fill.style.width = Math.round(frac * 100) + '%'; bar.append(fill);
+        const note = Object.assign(document.createElement('small'), { textContent: mc ? 'Market cap now ' + usd(mc) + ' · ' + Math.round(frac * 100) + '% of the way from ' + usd(prev) : 'Waiting for the first trade' });
+        box.append(head, bar, note);
+      } else box.append(Object.assign(document.createElement('b'), { textContent: 'Every milestone reached. The climb goes on.' }));
+    }
   }
 
   // ---------- Sound: an original chiptune soundtrack and retro effects, synthesized live (no audio files) ----------
