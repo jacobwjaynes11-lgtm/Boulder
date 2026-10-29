@@ -162,11 +162,13 @@ export class LiveCoin {
         const keep = new Set(wallets.sort((a, b) => s.board[b][0] - s.board[a][0]).slice(0, 150));
         for (const w of wallets) if (!keep.has(w)) delete s.board[w];
       }
-      // market cap once a minute, last 6 hours, for the chart
+      // one-minute candles of market cap (time, open, high, low, close), last 6 hours, for the chart
       if (s.mc) {
-        const minute = Math.floor(now / 60000) * 60000, h = s.mcHist || (s.mcHist = []);
-        if (h.length && h[h.length - 1][0] === minute) h[h.length - 1][1] = Math.round(s.mc);
-        else h.push([minute, Math.round(s.mc)]);
+        const minute = Math.floor(now / 60000) * 60000, h = s.mcHist || (s.mcHist = []), v = Math.round(s.mc);
+        let last = h[h.length - 1];
+        if (last && last.length < 5) { last = h[h.length - 1] = [last[0], last[1], last[1], last[1], last[1]]; }   // older single-value points
+        if (last && last[0] === minute) { last[2] = Math.max(last[2], v); last[3] = Math.min(last[3], v); last[4] = v; }
+        else { const o = last ? last[4] : v; h.push([minute, o, Math.max(o, v), Math.min(o, v), v]); }
         while (h.length && h[0][0] < now - 6 * 3_600_000) h.shift();
       }
       if (now >= (s.nextVol || 0)) { s.nextVol = now + 120_000; const v = await dexVolume24(s.mint).catch(() => 0); if (v) s.vol24 = v; }
