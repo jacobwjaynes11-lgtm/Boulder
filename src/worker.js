@@ -69,6 +69,7 @@ export class LiveCoin {
       mint: '', trades: [], seen: [], lastSig: '', mc: 0, supply: 0, solUsd: 0,
       nextSupply: 0, nextPrice: 0, updated: 0, lastError: '',
       burns: [], burnedTracked: 0, histDone: false, histComplete: false, histNext: 0,
+      day: '', board: {}, dayUsd: 0, mcHist: [], vol24: 0, nextVol: 0,
     };
   }
 
@@ -76,14 +77,18 @@ export class LiveCoin {
     await this.load();
     const mint = new URL(request.url).searchParams.get('mint');
     if (mint && this.s.mint !== mint) {
-      Object.assign(this.s, { mint, trades: [], seen: [], lastSig: '', mc: 0, burns: [], burnedTracked: 0, histDone: false, histComplete: false, histNext: 0 });
+      Object.assign(this.s, { mint, trades: [], seen: [], lastSig: '', mc: 0, burns: [], burnedTracked: 0, histDone: false, histComplete: false, histNext: 0,
+                              day: '', board: {}, dayUsd: 0, mcHist: [], vol24: 0, nextVol: 0 });
     }
     this.lastView = Date.now();
     // First visit or a stale tracker: refresh right now so the page gets real numbers immediately
     if (!this.s.updated || Date.now() - this.s.updated > 10_000) await this.refreshOnce();
     if (!(await this.state.storage.getAlarm())) await this.state.storage.setAlarm(Date.now() + POLL_MS);
     const { mint: m, mc, supply, solUsd, trades, updated, lastError, burns, burnedTracked, histComplete } = this.s;
+    const wantHist = new URL(request.url).searchParams.get('hist') === '1';
+    const board = Object.entries(this.s.board || {}).map(([wallet, [sol, n]]) => ({ wallet, sol, n })).sort((a, b) => b.sol - a.sol).slice(0, 10);
     return json({ mint: m, mc, supply, solUsd, trades, updated, burns: (burns || []).slice(0, 12), burnedTracked: burnedTracked || 0, histComplete: !!histComplete,
+                  board, dayUsd: this.s.dayUsd || 0, vol24: this.s.vol24 || 0, mcHist: wantHist ? (this.s.mcHist || []) : undefined,
                   error: !updated && lastError ? lastError : undefined, warning: lastError || undefined });
   }
 
@@ -145,6 +150,26 @@ export class LiveCoin {
         if (latest) s.mc = latest.mc;
       }
       if (!s.mc) { const d = await dexMarketCap(s.mint).catch(() => 0); if (d) s.mc = d; }
+      // today's pushers (UTC day): total SOL bought per wallet, and today's trading volume
+      const today = new Date(now).toISOString().slice(0, 10);
+      if (s.day !== today) { s.day = today; s.board = {}; s.dayUsd = 0; }
+      for (const t of newTrades) {
+        s.dayUsd = (s.dayUsd || 0) + (t.usd || (s.solUsd ? t.sol * s.solUsd : 0));
+        if (t.type === 'buy' && t.wallet) { const e = s.board[t.wallet] || [0, 0]; e[0] += t.sol; e[1] += 1; s.board[t.wallet] = e; }
+      }
+      const wallets = Object.keys(s.board);
+      if (wallets.length > 200) {                                     // keep the 150 biggest so the tracker's storage stays small
+        const keep = new Set(wallets.sort((a, b) => s.board[b][0] - s.board[a][0]).slice(0, 150));
+        for (const w of wallets) if (!keep.has(w)) delete s.board[w];
+      }
+      // market cap once a minute, last 6 hours, for the chart
+      if (s.mc) {
+        const minute = Math.floor(now / 60000) * 60000, h = s.mcHist || (s.mcHist = []);
+        if (h.length && h[h.length - 1][0] === minute) h[h.length - 1][1] = Math.round(s.mc);
+        else h.push([minute, Math.round(s.mc)]);
+        while (h.length && h[0][0] < now - 6 * 3_600_000) h.shift();
+      }
+      if (now >= (s.nextVol || 0)) { s.nextVol = now + 120_000; const v = await dexVolume24(s.mint).catch(() => 0); if (v) s.vol24 = v; }
 
       s.seen = [...seen].slice(-400);
       s.updated = now; s.lastError = '';
@@ -302,6 +327,13 @@ async function solPrice() {
     if (p > 0) return p;
   } catch {}
   return 0;
+}
+
+async function dexVolume24(mint) {
+  const r = await fetch('https://api.dexscreener.com/tokens/v1/solana/' + mint);
+  const pairs = await r.json();
+  if (!Array.isArray(pairs) || !pairs.length) return 0;
+  return pairs.reduce((a, p) => a + Number(p.volume?.h24 || 0), 0);
 }
 
 async function dexMarketCap(mint) {
