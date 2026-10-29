@@ -393,7 +393,7 @@
   .rewards p { color: var(--muted); font-size: 14px; margin: 10px 0 0; line-height: 1.45; }
   .rewards { display: flex; flex-direction: column; }
   .rewards .more { margin-top: auto; padding-top: 14px; font-size: 14px; font-weight: 600; color: var(--accent-text); }
-  #mcChart { width: 100%; height: auto; aspect-ratio: 320 / 96; image-rendering: pixelated; display: block; border-radius: 10px; background: #181425; }
+  #mcChart { width: 100%; height: auto; aspect-ratio: 320 / 128; image-rendering: pixelated; display: block; border-radius: 10px; background: #181425; }
   .chart-foot { display: flex; justify-content: space-between; gap: 10px; color: var(--muted); font-size: 13px; margin-top: 8px; font-variant-numeric: tabular-nums; }
   .chart-foot #chartNow { color: var(--ink); font-weight: 600; }
   body.guest #rewardsCard { display: none; }
@@ -481,7 +481,7 @@
     </div>
     <div class="card chart">
       <div class="card-h"><h3>Market Cap</h3><span class="range" id="chartRange">last hour</span><span class="chip" data-demo-chip hidden>Demo</span></div>
-      <canvas id="mcChart" width="320" height="96" aria-label="Market cap over the last hour"></canvas>
+      <canvas id="mcChart" width="320" height="128" aria-label="Market cap candles over the last hour"></canvas>
       <div class="chart-foot"><span id="chartLow">Low —</span><span id="chartNow">Now —</span><span id="chartHigh">High —</span></div>
     </div>
   </section>
@@ -3532,9 +3532,9 @@
   loadBurns(); setInterval(loadBurns, 120000);
 
   // ---------- Panels under the game: top pushers, BTC paid to holders, market cap chart ----------
-  let sessionBoard = new Map(), liveBoard = null, liveDayUsd = 0, liveVol24 = 0, sessionUsd = 0, lastHistAt = 0, mcSeries = [];
+  let sessionBoard = new Map(), liveBoard = null, liveDayUsd = 0, liveVol24 = 0, sessionUsd = 0, lastHistAt = 0, mcSeries = [], srvCandles = [];
   const isLiveMode = () => modeEl.classList.contains('live');
-  function resetPulse() { sessionBoard = new Map(); liveBoard = null; liveDayUsd = 0; liveVol24 = 0; sessionUsd = 0; lastHistAt = 0; mcSeries = []; }
+  function resetPulse() { sessionBoard = new Map(); liveBoard = null; liveDayUsd = 0; liveVol24 = 0; sessionUsd = 0; lastHistAt = 0; mcSeries = []; srvCandles = []; }
   function notePulseTrade(type, sol, wallet) {
     sessionUsd += sol * (solUsd || 150);
     if (type === 'buy' && wallet) { const e = sessionBoard.get(wallet) || { sol: 0, n: 0 }; e.sol += sol; e.n++; sessionBoard.set(wallet, e); }
@@ -3543,9 +3543,9 @@
     if (Array.isArray(d.board)) liveBoard = d.board;
     liveDayUsd = d.dayUsd || 0; liveVol24 = d.vol24 || 0;
     if (Array.isArray(d.mcHist)) {
+      // one-minute candles from the tracker: [time, open, high, low, close] (older entries are [time, value])
       lastHistAt = Date.now();
-      const lastT = d.mcHist.length ? d.mcHist[d.mcHist.length - 1][0] : 0;
-      mcSeries = [...d.mcHist.map(([t, v]) => ({ t, v })), ...mcSeries.filter(p => p.t > lastT)];
+      srvCandles = d.mcHist.map(e => e.length >= 5 ? { t: e[0], o: e[1], h: e[2], l: e[3], c: e[4] } : { t: e[0], o: e[1], h: e[1], l: e[1], c: e[1] });
     }
   }
   function sampleMc() {
@@ -3576,33 +3576,61 @@
       ? 'An estimate: 3% of the ' + usd(base) + ' traded ' + span + ', paid out in BTC to every wallet holding $20 or more.'
       : 'In this demo: 3% of the ' + usd(base) + ' of made-up trading so far. Once live, this shows the real last 24 hours.';
   }
-  // a pixel-art step chart of the last hour, in the game's palette
+  // Candles: tracker candles (one per minute) plus this page's own samples, grouped into time buckets.
+  // Short histories (the demo, or right after launch) use 15-second candles so the chart fills in quickly.
+  function buildCandles(now) {
+    const span = 3600e3, samples = mcSeries.filter(p => p.t >= now - span), srv = srvCandles.filter(c => c.t >= now - span);
+    const first = Math.min(srv.length ? srv[0].t : Infinity, samples.length ? samples[0].t : Infinity);
+    const bucket = now - first < 20 * 60e3 ? 15e3 : 60e3, map = new Map();
+    const add = (t, o, h, l, c) => {
+      const k = Math.floor(t / bucket) * bucket, e = map.get(k);
+      if (!e) map.set(k, { t: k, o, h, l, c }); else { e.h = Math.max(e.h, h); e.l = Math.min(e.l, l); e.c = c; }
+    };
+    srv.forEach(c => add(c.t, c.o, c.h, c.l, c.c));
+    samples.forEach(p => add(p.t, p.v, p.v, p.v, p.v));
+    const arr = [...map.values()].sort((x, y) => x.t - y.t);
+    for (let i = 1; i < arr.length; i++) {                                   // each candle opens where the last one closed
+      arr[i].o = arr[i - 1].c; arr[i].h = Math.max(arr[i].h, arr[i].o); arr[i].l = Math.min(arr[i].l, arr[i].o);
+    }
+    return { arr, bucket };
+  }
+  // a retro candlestick chart in the game's palette: chunky pixel candles, dotted grid, a dashed line at the current price
   function drawChart() {
     const cv = $('#mcChart'); if (!cv) return;
     const g = cv.getContext('2d'), W = cv.width, H = cv.height, now = Date.now();
+    const UP = '#63c74d', UP_EDGE = '#3e8948', DOWN = '#e43b44', DOWN_EDGE = '#a22633';
     g.fillStyle = '#181425'; g.fillRect(0, 0, W, H);
-    g.fillStyle = '#262b44'; for (let y = 16; y < H; y += 24) for (let x = 0; x < W; x += 4) g.fillRect(x, y, 2, 1);
-    const pts = mcSeries.filter(p => p.t >= now - 3600e3);
-    if (pts.length < 6 || now - pts[0].t < 45000) { $('#chartRange').textContent = 'collecting…'; $('#chartLow').textContent = 'Low —'; $('#chartHigh').textContent = 'High —'; $('#chartNow').textContent = mc ? 'Now ' + usd(mc) : 'Now —'; return; }
-    const t0 = pts[0].t, dur = Math.max(1, now - t0);
-    let lo = Infinity, hi = 0; pts.forEach(p => { lo = Math.min(lo, p.v); hi = Math.max(hi, p.v); });
+    g.fillStyle = '#262b44';
+    for (let y = 16; y < H; y += 24) for (let x = 0; x < W; x += 4) g.fillRect(x, y, 2, 1);   // dotted price grid
+    const { arr, bucket } = buildCandles(now);
+    if (arr.length < 3) {
+      $('#chartRange').textContent = 'collecting…'; $('#chartLow').textContent = 'Low —'; $('#chartHigh').textContent = 'High —';
+      $('#chartNow').textContent = mc ? 'Now ' + usd(mc) : 'Now —'; return;
+    }
+    const PITCH = 6, BODY = 4, RIGHT = 12;                                    // 6px per candle: a 4px body and a 2px gap
+    const view = arr.slice(-Math.floor((W - RIGHT) / PITCH));
+    let lo = Infinity, hi = 0; view.forEach(c => { lo = Math.min(lo, c.l); hi = Math.max(hi, c.h); });
     const flo = lo, fhi = hi;
     if (hi - lo < hi * 0.02) { const m = (hi + lo) / 2; lo = m * 0.99; hi = m * 1.01; }
-    const pad = 8, Y = v => Math.round(H - pad - (v - lo) / (hi - lo) * (H - 2 * pad));
-    const cols = []; let j = 0;
-    for (let x = 0; x < W; x++) {
-      const t = t0 + x / (W - 1) * dur;
-      while (j < pts.length - 1 && pts[j + 1].t <= t) j++;
-      cols.push(Y(pts[j].v));
-    }
-    g.fillStyle = '#3e2731';                                                    // dithered fill under the line
-    for (let x = 0; x < W; x++) for (let y = cols[x] + 2; y < H; y++) if ((x + y) & 1) g.fillRect(x, y, 1, 1);
-    g.fillStyle = '#f77622';                                                    // the line, two pixels thick, stepping like the game
-    for (let x = 0; x < W; x++) { const y = cols[x], py = x ? cols[x - 1] : y; for (let yy = Math.min(y, py); yy <= Math.max(y, py); yy++) g.fillRect(x, yy, 1, 2); }
-    g.fillStyle = '#fee761'; g.fillRect(W - 4, cols[W - 1] - 1, 4, 4);         // where it is now
-    const mins = Math.max(1, Math.round(dur / 60000));
-    $('#chartRange').textContent = mins >= 55 ? 'last hour' : 'last ' + mins + (mins === 1 ? ' minute' : ' minutes');
-    $('#chartLow').textContent = 'Low ' + usd(flo); $('#chartHigh').textContent = 'High ' + usd(fhi); $('#chartNow').textContent = 'Now ' + usd(mc || pts[pts.length - 1].v);
+    const padv = (hi - lo) * 0.08; lo -= padv; hi += padv;
+    const Y = v => Math.round(H - 6 - (v - lo) / (hi - lo) * (H - 12));
+    const x0 = W - RIGHT - view.length * PITCH;
+    g.fillStyle = '#262b44';
+    view.forEach((c, i) => { if (i && (c.t / bucket) % 10 === 0) for (let y = 0; y < H; y += 4) g.fillRect(x0 + i * PITCH + 1, y, 1, 2); });   // dotted time marks
+    view.forEach((c, i) => {
+      const up = c.c >= c.o, x = x0 + i * PITCH, mid = x + 1;
+      const yh = Y(c.h), yl = Y(c.l), yo = Y(c.o), yc = Y(c.c), top = Math.min(yo, yc), bot = Math.max(yo, yc);
+      g.fillStyle = up ? UP : DOWN; g.fillRect(mid, yh, 2, Math.max(1, yl - yh + 1));       // wick
+      g.fillStyle = up ? UP_EDGE : DOWN_EDGE; g.fillRect(x, top, BODY, Math.max(2, bot - top + 1));   // body edge
+      g.fillStyle = up ? UP : DOWN; if (bot - top >= 3) g.fillRect(x + 1, top + 1, BODY - 2, bot - top - 1);  // body fill
+    });
+    const cur = mc || view[view.length - 1].c, yNow = Y(cur);
+    g.fillStyle = '#fee761';
+    for (let x = 0; x < W - RIGHT + 2; x += 6) g.fillRect(x, yNow, 3, 1);   // dashed line at the current price
+    g.fillRect(W - RIGHT + 3, yNow - 2, 6, 5); g.fillRect(W - RIGHT + 2, yNow - 1, 1, 3);   // price marker
+    const mins = Math.max(1, Math.round((now - view[0].t) / 60000));
+    $('#chartRange').textContent = (bucket === 60e3 ? '1-minute' : '15-second') + ' candles · ' + (mins >= 55 ? 'last hour' : 'last ' + mins + (mins === 1 ? ' minute' : ' minutes'));
+    $('#chartLow').textContent = 'Low ' + usd(flo); $('#chartHigh').textContent = 'High ' + usd(fhi); $('#chartNow').textContent = 'Now ' + usd(cur);
   }
   function renderPulse() {
     const live = isLiveMode();
