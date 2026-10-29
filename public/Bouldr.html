@@ -484,7 +484,7 @@
     </div>
     <div class="burn-nums">
       <div>Supply<b id="burnSupply">1B</b></div>
-      <div class="f">Burned<b id="burnBurned">0</b></div>
+      <div class="f"><span id="burnBurnedLabel">Burned</span><b id="burnBurned">0</b></div>
       <div>Market cap<b id="burnMc">—</b></div>
       <div>Peak market cap<b id="burnAth">—</b></div>
     </div>
@@ -579,7 +579,8 @@
   const nextMilestone = mc => MILESTONES.find(m => m > mc) || SUMMIT;
 
   // ---------- Supply (burns shrink the mountain) ----------
-  const INITIAL_SUPPLY = 1_000_000_000;
+  let INITIAL_SUPPLY = 1_000_000_000;   // a coin's starting supply: 1B for pump.fun coins, worked out from the chain for others
+  let burnedExact = true;
   // On your own site, Solana calls and live data go through the site's /api (your RPC key stays on Cloudflare)
   const onOwnSite = /^https?:$/.test(location.protocol) && !inPreview;
   const RPC = params.get('rpc') || (onOwnSite ? '/api/rpc' : 'https://api.mainnet-beta.solana.com');
@@ -983,6 +984,7 @@
     try { renderPlan(); } catch (e) {}
     const bS = $('#burnSupply'); if (bS) {
       bS.textContent = compact(supply); $('#burnBurned').textContent = compact(burned);
+      $('#burnBurnedLabel').textContent = burnedExact ? 'Burned' : 'Burned (tracked)';
       $('#burnMc').textContent = mc ? usd(mc) : '—'; $('#burnAth').textContent = ath ? usd(ath) : '—';
     }
     $('#sBurned').textContent = compact(burned);
@@ -1095,7 +1097,13 @@
       if (!r.ok || d.error) throw new Error(d.error || 'HTTP ' + r.status);
       liveFails = 0;
       if (d.solUsd) solUsd = d.solUsd;
-      if (d.supply) setSupply(d.supply, liveFirst);
+      if (d.supply) {
+        // starting supply: pump.fun-style coins always start at 1B; any other coin starts at today's supply plus every burn found on chain
+        if (/(pump|bonk)$/.test(forMint)) { INITIAL_SUPPLY = 1_000_000_000; burnedExact = true; }
+        else if (typeof d.burnedTracked === 'number') { INITIAL_SUPPLY = d.supply + d.burnedTracked; burnedExact = !!d.histComplete; }
+        setSupply(d.supply, liveFirst);
+      }
+      if (Array.isArray(d.burns)) renderChainBurns(d.burns);
       const fresh = (d.trades || []).filter(t => !seenSigs.has(t.sig)).reverse();   // oldest first
       fresh.forEach(t => seenSigs.add(t.sig));
       if (liveFirst) {
@@ -3258,7 +3266,7 @@
     hide($('#plan')); document.querySelectorAll('a[href="#plan"]').forEach(hide);
     hide($('#rewards')); document.querySelectorAll('a[href="#rewards"]').forEach(hide);
     document.querySelectorAll('[data-burn-wallet]').forEach(hide);
-    if (burns) $('#burnText').textContent = 'This coin burns supply. Every burn sets the boulder on fire and shrinks the mountain, and the numbers here update live from the chain.';
+    if (burns) $('#burnText').textContent = 'This coin burns supply. The numbers here and the list of burns below update live from the blockchain.';
     else { hide($('#burn')); document.querySelectorAll('a[href="#burn"]').forEach(hide); }
     const earn = document.querySelector('h1 .earn'); if (earn) earn.remove();
     $('#heroText').textContent = 'Every buy of this coin pushes The Boulder Holders up the mountain and every sell lets the boulder slide back' + (burns ? ', and every burn sets the boulder on fire.' : '.') + ' They never reach the top.';
@@ -3341,6 +3349,25 @@
     } catch (e) { /* no burn history yet */ }
   }
   loadBurns(); setInterval(loadBurns, 120000);
+
+  // Guest pages with burns on: the coin's own burns, read straight from the blockchain by the live tracker
+  function renderChainBurns(list) {
+    if (!document.body.classList.contains('guest') || params.get('burns') !== '1' || !list.length) return;
+    const ago = t => { const s = Date.now() / 1000 - t; return !t ? '' : s < 3600 ? Math.max(1, Math.round(s / 60)) + 'm ago' : s < 86400 ? Math.round(s / 3600) + 'h ago' : Math.round(s / 86400) + 'd ago'; };
+    const ol = $('#burnList'); ol.textContent = '';
+    list.slice(0, 8).forEach(b => {
+      const li = document.createElement('li');
+      const what = document.createElement('span');
+      what.append('Burned ', Object.assign(document.createElement('b'), { textContent: compact(b.amount || 0) }), ' tokens');
+      const when = document.createElement('span'); when.textContent = ago(b.time);
+      if (/^[1-9A-HJ-NP-Za-km-z]{60,100}$/.test(b.sig || '')) {
+        when.append(when.textContent ? ' · ' : '', Object.assign(document.createElement('a'), { href: 'https://solscan.io/tx/' + b.sig, target: '_blank', rel: 'noopener', textContent: 'View' }));
+      }
+      li.append(what, when); ol.append(li);
+    });
+    $('#burnBotNote').textContent = 'Read straight from the blockchain. Every burn of this coin shows up here.';
+    $('#burnFeed').hidden = false;
+  }
 
   if (PREVIEW_MINT) {
     document.body.classList.add('live-preview', 'hide-dev');
