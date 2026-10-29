@@ -68,19 +68,23 @@ export class LiveCoin {
     this.s = (await this.state.storage.get('s')) || {
       mint: '', trades: [], seen: [], lastSig: '', mc: 0, supply: 0, solUsd: 0,
       nextSupply: 0, nextPrice: 0, updated: 0, lastError: '',
+      burns: [], burnedTracked: 0, histDone: false, histComplete: false, histNext: 0,
     };
   }
 
   async fetch(request) {
     await this.load();
     const mint = new URL(request.url).searchParams.get('mint');
-    if (mint && this.s.mint !== mint) { this.s.mint = mint; this.s.trades = []; this.s.seen = []; this.s.lastSig = ''; this.s.mc = 0; }
+    if (mint && this.s.mint !== mint) {
+      Object.assign(this.s, { mint, trades: [], seen: [], lastSig: '', mc: 0, burns: [], burnedTracked: 0, histDone: false, histComplete: false, histNext: 0 });
+    }
     this.lastView = Date.now();
     // First visit or a stale tracker: refresh right now so the page gets real numbers immediately
     if (!this.s.updated || Date.now() - this.s.updated > 10_000) await this.refreshOnce();
     if (!(await this.state.storage.getAlarm())) await this.state.storage.setAlarm(Date.now() + POLL_MS);
-    const { mint: m, mc, supply, solUsd, trades, updated, lastError } = this.s;
-    return json({ mint: m, mc, supply, solUsd, trades, updated, error: !updated && lastError ? lastError : undefined, warning: lastError || undefined });
+    const { mint: m, mc, supply, solUsd, trades, updated, lastError, burns, burnedTracked, histComplete } = this.s;
+    return json({ mint: m, mc, supply, solUsd, trades, updated, burns: (burns || []).slice(0, 12), burnedTracked: burnedTracked || 0, histComplete: !!histComplete,
+                  error: !updated && lastError ? lastError : undefined, warning: lastError || undefined });
   }
 
   async alarm() {
@@ -114,11 +118,14 @@ export class LiveCoin {
       fresh.forEach(sig => seen.add(sig));
       const toParse = fresh.slice(0, MAX_TX_PER_CYCLE);           // newest first
 
-      const parsed = [];
+      const parsed = [], foundBurns = [];
       for (let i = 0; i < toParse.length; i += 4) {               // 4 at a time
-        const batch = await Promise.all(toParse.slice(i, i + 4).map(sig => parseTrade(env, sig, s.mint, s.solUsd).catch(() => null)));
-        parsed.push(...batch);
+        const batch = await Promise.all(toParse.slice(i, i + 4).map(sig => inspectTx(env, sig, s.mint, s.solUsd).catch(() => null)));
+        batch.forEach(r => { parsed.push(r ? r.trade : null); if (r && r.burn) foundBurns.push(r.burn); });
       }
+      addBurns(s, foundBurns);
+      // once per coin: look up its past burns, so the list isn't empty just because nobody was watching when they happened
+      if (!s.histDone && now >= (s.histNext || 0)) await burnHistory(env, s).catch(() => { s.histNext = now + 3_600_000; });
       // Market cap from each trade's price. Tiny trades (fees dominate) and wild outliers are not trusted for price;
       // they still count as buys/sells for the game, they just don't move the market cap.
       const toMc = t => (s.supply ? (t.priceUsd ? t.priceUsd * s.supply : s.solUsd ? t.priceSol * s.supply * s.solUsd : 0) : 0);
@@ -195,9 +202,58 @@ async function tokenUsd(m) {
   return usd;
 }
 
-async function parseTrade(env, sig, mint, solUsd = 0) {
+// Reads one transaction for a coin: a burn (if any of the coin was destroyed) and a trade (if the signer bought or sold)
+async function inspectTx(env, sig, mint, solUsd = 0) {
   const tx = await rpc(env, 'getTransaction', [sig, { encoding: 'json', maxSupportedTransactionVersion: 0, commitment: 'confirmed' }]);
   if (!tx || !tx.meta || tx.meta.err) return null;
+  return { burn: burnInTx(tx, sig, mint), trade: await tradeFromTx(tx, sig, mint, solUsd).catch(() => null) };
+}
+
+// A burn is any transaction where the coin's total across every wallet goes down: tokens were destroyed, not moved
+function burnInTx(tx, sig, mint) {
+  const total = arr => (arr || []).filter(b => b.mint === mint).reduce((a, b) => a + Number(b.uiTokenAmount.uiAmount || 0), 0);
+  const before = total(tx.meta.preTokenBalances), gone = before - total(tx.meta.postTokenBalances);
+  if (!(gone > Math.max(1e-6, before * 1e-9))) return null;
+  return { sig, amount: gone, time: tx.blockTime || 0, slot: tx.slot || 0 };
+}
+
+function addBurns(s, list) {
+  if (!list.length) return;
+  const have = new Set((s.burns || []).map(b => b.sig));
+  for (const b of list) if (!have.has(b.sig)) { s.burns = [b, ...(s.burns || [])]; s.burnedTracked = (s.burnedTracked || 0) + b.amount; have.add(b.sig); }
+  s.burns.sort((a, b) => (b.slot - a.slot) || (b.time - a.time));
+  s.burns = s.burns.slice(0, 50);
+}
+
+// Past burns, looked up once per coin through Helius (the RPC provider in RPC_URL), which can list a coin's burn transactions
+async function burnHistory(env, s) {
+  s.histNext = Date.now() + 3_600_000;
+  let key = '';
+  try { const u = new URL(env.RPC_URL || ''); if (/helius/i.test(u.hostname)) key = u.searchParams.get('api-key') || ''; } catch {}
+  if (!key) { s.histDone = true; return; }                         // other providers: burns are tracked from now on only
+  const found = []; let before = '', complete = false;
+  for (let page = 0; page < 5; page++) {
+    const url = 'https://api.helius.xyz/v0/addresses/' + s.mint + '/transactions?type=BURN&limit=100&api-key=' + key + (before ? '&before=' + before : '');
+    const r = await fetch(url);
+    if (!r.ok) throw new Error('burn history HTTP ' + r.status);
+    const txs = await r.json();
+    if (!Array.isArray(txs)) throw new Error('burn history: unexpected reply');
+    for (const t of txs) {
+      // net change of this coin across every account in the transaction; negative means tokens were destroyed
+      let net = 0;
+      for (const a of t.accountData || []) for (const c of a.tokenBalanceChanges || []) {
+        if (c.mint === s.mint && c.rawTokenAmount) net += Number(c.rawTokenAmount.tokenAmount) / 10 ** Number(c.rawTokenAmount.decimals || 0);
+      }
+      if (net < 0) found.push({ sig: t.signature, amount: -net, time: t.timestamp || 0, slot: t.slot || 0 });
+    }
+    if (txs.length < 100) { complete = true; break; }
+    before = txs[txs.length - 1].signature;
+  }
+  addBurns(s, found);
+  s.histDone = true; s.histComplete = complete;
+}
+
+async function tradeFromTx(tx, sig, mint, solUsd = 0) {
   const payer = tx.transaction.message.accountKeys[0];
   const payerKey = typeof payer === 'string' ? payer : payer.pubkey;
   const sum = (arr, m) => (arr || []).filter(b => b.mint === m && b.owner === payerKey)
