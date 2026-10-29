@@ -25,7 +25,7 @@ export default {
       if (!MINT_RE.test(mint)) return cors(json({ error: 'Invalid mint' }, 400));
       if (!env.LIVE) return cors(json({ error: 'The LIVE Durable Object binding is missing from wrangler.jsonc' }, 500));
       const stub = env.LIVE.get(env.LIVE.idFromName(mint));
-      const res = await stub.fetch('https://tracker/snapshot?mint=' + mint);
+      const res = await stub.fetch('https://tracker/snapshot?mint=' + mint + (url.searchParams.get('hist') === '1' ? '&hist=1' : ''));
       return cors(new Response(res.body, { status: res.status, headers: { 'Content-Type': 'application/json', 'Cache-Control': 'no-store' } }));
     }
     if (url.pathname === '/api/burns') {
