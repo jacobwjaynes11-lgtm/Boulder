@@ -232,12 +232,18 @@ async function burnHistory(env, s) {
   try { const u = new URL(env.RPC_URL || ''); if (/helius/i.test(u.hostname)) key = u.searchParams.get('api-key') || ''; } catch {}
   if (!key) { s.histDone = true; return; }                         // other providers: burns are tracked from now on only
   const found = []; let before = '', complete = false;
-  for (let page = 0; page < 5; page++) {
+  for (let page = 0; page < 6; page++) {
     const url = 'https://api.helius.xyz/v0/addresses/' + s.mint + '/transactions?type=BURN&limit=100&api-key=' + key + (before ? '&before=' + before : '');
     const r = await fetch(url);
-    if (!r.ok) throw new Error('burn history HTTP ' + r.status);
-    const txs = await r.json();
+    const txs = await r.json().catch(() => null);
+    if (!r.ok) {
+      // Helius searches in windows; when a window has no burns it replies with the signature to keep searching from
+      const m = /([1-9A-HJ-NP-Za-km-z]{80,90})/.exec(JSON.stringify(txs || ''));
+      if (m && m[1] !== before) { before = m[1]; continue; }
+      throw new Error('burn history HTTP ' + r.status);
+    }
     if (!Array.isArray(txs)) throw new Error('burn history: unexpected reply');
+    if (!txs.length) { complete = true; break; }                    // nothing older: the whole history has been read
     for (const t of txs) {
       // net change of this coin across every account in the transaction; negative means tokens were destroyed
       let net = 0;
@@ -246,7 +252,6 @@ async function burnHistory(env, s) {
       }
       if (net < 0) found.push({ sig: t.signature, amount: -net, time: t.timestamp || 0, slot: t.slot || 0 });
     }
-    if (txs.length < 100) { complete = true; break; }
     before = txs[txs.length - 1].signature;
   }
   addBurns(s, found);
