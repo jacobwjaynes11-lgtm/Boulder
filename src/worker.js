@@ -118,14 +118,17 @@ export class LiveCoin {
         s.supply = Number(v.amount) / 10 ** v.decimals; s.nextSupply = now + SUPPLY_EVERY_MS;
       }
 
-      const opts = { limit: 25 };
+      // The first look at a coin reads further back (failed bot transactions can bury its real trades),
+      // after that only what's new since the last check
+      const firstLook = !s.lastSig;
+      const opts = { limit: firstLook ? 100 : 25 };
       if (s.lastSig) opts.until = s.lastSig;
       const sigs = await rpc(env, 'getSignaturesForAddress', [s.mint, opts]);
       if (sigs.length) s.lastSig = sigs[0].signature;
       const seen = new Set(s.seen);
       const fresh = sigs.filter(x => !x.err && !seen.has(x.signature)).map(x => x.signature);
       fresh.forEach(sig => seen.add(sig));
-      const toParse = fresh.slice(0, MAX_TX_PER_CYCLE);           // newest first
+      const toParse = fresh.slice(0, firstLook ? 16 : MAX_TX_PER_CYCLE);   // newest first
 
       const parsed = [], foundBurns = [];
       for (let i = 0; i < toParse.length; i += 4) {               // 4 at a time
@@ -149,9 +152,18 @@ export class LiveCoin {
       if (newTrades.length) {
         s.trades = [...newTrades, ...s.trades].sort((a, b) => (b.slot - a.slot) || 0).slice(0, KEEP_TRADES);
         const latest = s.trades.find(t => t.mc > 0);
-        if (latest) s.mc = latest.mc;
+        if (latest) { s.mc = latest.mc; s.mcFromPrice = false; }
       }
-      if (!s.mc) { const d = await dexMarketCap(s.mint).catch(() => 0); if (d) s.mc = d; }
+      // No usable trade price yet (a quiet coin, or one whose recent trades were all tiny): use its live market price
+      // from Jupiter, then DexScreener, and refresh that once a minute until a real trade takes over
+      if (!s.mc || (s.mcFromPrice && now >= (s.nextMcPrice || 0))) {
+        s.nextMcPrice = now + 60_000;
+        let v = 0;
+        const p = await tokenUsd(s.mint).catch(() => 0);
+        if (p > 0 && s.supply) v = p * s.supply;
+        if (!v) v = await dexMarketCap(s.mint).catch(() => 0);
+        if (v) { s.mc = v; s.mcFromPrice = true; }
+      }
       // today's pushers (UTC day): total SOL bought per wallet, and today's trading volume
       const today = new Date(now).toISOString().slice(0, 10);
       if (s.day !== today) { s.day = today; s.board = {}; s.dayUsd = 0; }
