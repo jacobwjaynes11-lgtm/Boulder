@@ -22,7 +22,7 @@
     { "tag": "v2", "new_sqlite_classes": ["BurnLog"] }
   ],
   // The burn bot runs at the top of every hour
-  "triggers": { "crons": ["0 * * * *"] },
+  "triggers": { "crons": ["* * * * *"] },
   // Burn bot settings. It does nothing until BURN_MINT is set and the BURN_KEY secret exists.
   "vars": {
     "BURN_MINT": "",                 // your coin's contract address
