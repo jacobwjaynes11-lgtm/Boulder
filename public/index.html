@@ -184,6 +184,12 @@
   @keyframes coin-float { 0%, 100% { transform: translateY(0) rotate(-1.5deg); } 50% { transform: translateY(-12px) rotate(1.5deg); } }
   @media (prefers-reduced-motion: reduce) { .hero-logo { animation: none !important; } }
   .brand { display: inline-flex; align-items: center; gap: 10px; }
+  .trade-direct { display: grid; gap: 12px; margin: 4px 0 6px; }
+  .trade-direct[hidden] { display: none; }
+  .trade-direct p { margin: 0; color: var(--muted); font-size: 14px; line-height: 1.5; }
+  .trade-direct .btn { justify-self: stretch; text-align: center; margin: 0; }
+  #trade.direct .qrow, #trade.direct #settings, #trade.direct #editQuick, #trade.direct #pumpLink, #trade.direct #walletBtn,
+  #trade.direct #walletInfo, #trade.direct #tradeStatus, #trade.direct #tradeFine { display: none !important; }
   .brand-logo { width: 30px; height: 30px; flex: none; }
   .brand-logo.big { width: 40px; height: 40px; }
   .hero h1 { font-family: var(--display); font-weight: 700; font-size: clamp(42px, 7.2vw, 88px); line-height: 1; margin: 0 0 16px; letter-spacing: .005em; }
@@ -502,6 +508,10 @@
         <h2>Trade</h2>
         <button class="ghost small" id="walletBtn">Connect wallet</button>
       </div>
+      <div class="trade-direct" id="tradeDirect" hidden>
+        <p>Buy and sell <span data-site="ticker">$BOULDER</span> directly on pump.fun. Every trade still moves the boulder here, live.</p>
+        <a class="btn" id="tradeDirectBtn" target="_blank" rel="noopener">Buy on pump.fun</a>
+      </div>
       <p class="wallet-info" id="walletInfo">Connect a Solana wallet to buy and sell right here.</p>
       <div class="ca" id="caRow" hidden>
         <span>Contract</span><code id="caText"></code><button class="ghost small" id="copyCa">Copy</button>
@@ -732,6 +742,7 @@
 
   // ▼ Paste your coin's contract address here once it's launched. Leave empty until then.
   const COIN_MINT = 'E5PukDtBgdbW9e2MwWAPgeNPG6nTtLkQNXbW5wMXpump';
+  const IN_SITE_TRADING = false;   // quick buy/sell on this page (via PumpPortal); off while PumpPortal can't trade BTC-paired coins, so buyers go to pump.fun
 
   // ---------- Milestones: market caps along the trail, evenly spaced, summit last ----------
   const MILESTONES = [3e3, 1e4, 2.5e4, 5e4, 1e5, 2.5e5, 5e5, 1e6, 5e6, 1e7, 2e7, 5e7, 1e8, 5e8, 1e9, 5e9, 1e10, 5e10, 1e11];
@@ -1421,6 +1432,10 @@
     $('#caRow').hidden = !has;
     $('#caText').textContent = has ? shortAddr(mint) : '';
     const pl = $('#pumpLink'); pl.hidden = !has; if (has) pl.href = 'https://pump.fun/coin/' + mint;
+    const direct = !IN_SITE_TRADING && has;                       // send buyers straight to pump.fun instead of the quick-trade buttons
+    $('#trade').classList.toggle('direct', direct);
+    $('#tradeDirect').hidden = !direct;
+    if (direct) $('#tradeDirectBtn').href = 'https://pump.fun/coin/' + mint;
     tokBal = null;
     renderQuick(); renderWallet();
     if (wallet) refreshBalances();
