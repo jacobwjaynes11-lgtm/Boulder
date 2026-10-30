@@ -606,7 +606,7 @@
   <div class="burn-wrap">
     <div>
       <h2 class="big">The Burn</h2>
-      <p id="burnText">Trades made right here on bouldr.fun include a 0.5% site fee. Every hour a bot uses it to buy <span data-site="ticker">$BOULDER</span> back off the market and burn it, taking it out of circulation for good. Supply only goes one way.</p>
+      <p id="burnText">Trades made right here on bouldr.fun include a 0.5% site fee. Within about a minute of it landing, a bot uses it to buy <span data-site="ticker">$BOULDER</span> back off the market and burn it, taking it out of circulation for good. Supply only goes one way.</p>
       <p>You can watch it happen live: each burn sets the boulder on fire and shrinks the mountain.</p>
       <p data-burn-wallet hidden>Every buyback and burn happens in one public wallet, so you can check it yourself: <a id="burnWalletLink" target="_blank" rel="noopener"></a></p>
     </div>
@@ -626,7 +626,7 @@
 
 <section class="page" id="plan">
   <h2 class="big">Milestones</h2>
-  <p class="sub">The market caps on the climb. Each one sets off fireworks the first time it’s reached, and the hourly buyback and burn keeps running the whole way up.</p>
+  <p class="sub">The market caps on the climb. Each one sets off fireworks the first time it’s reached, and the automatic buyback and burn keeps running the whole way up.</p>
   <div class="ms-next" id="msNext"></div>
   <ol class="ms-grid" id="planList"></ol>
   <p class="plan-regular" id="planRegular"></p>
@@ -639,7 +639,7 @@
     <div><dt>Launch</dt><dd>Fair launch on pump.fun<small>No presale.</small></dd></div>
     <div><dt>Paired with</dt><dd>Bitcoin<small>Trades against wrapped BTC on Solana.</small></dd></div>
     <div><dt>Holder rewards</dt><dd>3% of every trade<small>Paid in BTC by pump.fun to every wallet holding $20 or more.</small></dd></div>
-    <div><dt>Site fee</dt><dd>0.5%, only on trades made on bouldr.fun<small>Funds the hourly buyback and burn. Buying on pump.fun directly doesn’t include it. Pump.fun’s standard fees apply either way.</small></dd></div>
+    <div><dt>Site fee</dt><dd>0.5%, only on trades made on bouldr.fun<small>Funds the automatic buyback and burn, checked every minute. Buying on pump.fun directly doesn’t include it. Pump.fun’s standard fees apply either way.</small></dd></div>
     <div><dt>Starting supply</dt><dd>1,000,000,000<small>Burns only ever take it down.</small></dd></div>
     <div><dt>Contract address</dt><dd><span id="factCa">Published at launch</span><small id="factCaNote">It will appear here, in the menu bar and on pump.fun the moment the coin goes live.</small></dd></div>
   </dl>
@@ -667,7 +667,7 @@
   <div class="faq">
     <details><summary><span>What is <span data-site="ticker">$BOULDER</span>?</span></summary><p>A meme coin on Solana, paired with Bitcoin, with a live game on this site. Every real buy pushes the boulder up the mountain and every sell lets it slide back, and 3% of every trade goes to holders in BTC. It has no intrinsic value; it’s for fun.</p></details>
     <details><summary>How do I earn BTC?</summary><p>Hold at least $20 worth. Pump.fun collects 3% of every trade into a rewards vault and pays it out to every qualifying wallet in wrapped BTC, split by how much you hold. There’s nothing to claim or stake. Payouts depend entirely on trading, so they aren’t guaranteed.</p></details>
-    <details><summary>What fees are there?</summary><p>Every trade pays the 3% holder reward plus pump.fun’s standard fees. Trades made through the panel on bouldr.fun also include a 0.5% site fee, which a bot uses every hour to buy back and burn <span data-site="ticker">$BOULDER</span>. Buying on pump.fun directly skips the site fee.</p></details>
+    <details><summary>What fees are there?</summary><p>Every trade pays the 3% holder reward plus pump.fun’s standard fees. Trades made through the panel on bouldr.fun also include a 0.5% site fee, which a bot uses to buy back and burn <span data-site="ticker">$BOULDER</span> within about a minute. Buying on pump.fun directly skips the site fee.</p></details>
     <details><summary>Is it safe to connect my wallet here?</summary><p>Trades are built by PumpPortal and signed in your own wallet; bouldr.fun never sees your keys or recovery phrase, and nothing happens until you approve it in your wallet. Never share your recovery phrase with anyone, including anyone claiming to be from Boulder.</p></details>
     <details><summary>Where can I check the burns?</summary><p>Every buyback and burn happens from one public burn wallet, and each burn is a transaction anyone can look up on Solscan. Once the coin is live, the Recent burns list links straight to each one, and the links under Fees &amp; Facts take you to the token and the burn wallet.</p></details>
     <details><summary>Is the game real?</summary><p>Yes. Once the coin is live, the game runs on real on-chain trades: nothing is scripted, and the mountain only moves when the market does. Before launch, the page shows a clearly labeled demo with made-up trades, and you can try every effect yourself on the <a href="?demo=1#play">demo page</a>.</p></details>
@@ -1753,15 +1753,15 @@
   const BURN_PLAN = {
     regular: 'Every burn is an on-chain transaction, listed under Recent burns once the coin is live so you can check each one yourself.',
     steps: [
-      { at: 10_000,     title: 'First milestone',     detail: 'The hourly buyback and burn is well underway.', tx: '' },
-      { at: 25_000,     title: 'Burn',                detail: 'Hourly burns keep going past this point.', tx: '' },
-      { at: 50_000,     title: 'Burn',                detail: 'Hourly burns keep going past this point.', tx: '' },
-      { at: 100_000,    title: 'Six-figure burn',     detail: 'Hourly burns keep going past this point.', tx: '' },
-      { at: 250_000,    title: 'Burn',                detail: 'Hourly burns keep going past this point.', tx: '' },
-      { at: 500_000,    title: 'Burn',                detail: 'Hourly burns keep going past this point.', tx: '' },
-      { at: 1_000_000,  title: 'Million-dollar burn', detail: 'Hourly burns keep going past this point.', tx: '' },
-      { at: 5_000_000,  title: 'Burn',                detail: 'Hourly burns keep going past this point.', tx: '' },
-      { at: 10_000_000, title: 'Big burn',            detail: 'Hourly burns keep going past this point.', tx: '' }
+      { at: 10_000,     title: 'First milestone',     detail: 'The automatic buyback and burn is well underway.', tx: '' },
+      { at: 25_000,     title: 'Burn',                detail: 'Burns keep going past this point.', tx: '' },
+      { at: 50_000,     title: 'Burn',                detail: 'Burns keep going past this point.', tx: '' },
+      { at: 100_000,    title: 'Six-figure burn',     detail: 'Burns keep going past this point.', tx: '' },
+      { at: 250_000,    title: 'Burn',                detail: 'Burns keep going past this point.', tx: '' },
+      { at: 500_000,    title: 'Burn',                detail: 'Burns keep going past this point.', tx: '' },
+      { at: 1_000_000,  title: 'Million-dollar burn', detail: 'Burns keep going past this point.', tx: '' },
+      { at: 5_000_000,  title: 'Burn',                detail: 'Burns keep going past this point.', tx: '' },
+      { at: 10_000_000, title: 'Big burn',            detail: 'Burns keep going past this point.', tx: '' }
     ]
   };
   let lastPlanKey = '';
@@ -3535,7 +3535,7 @@
         }
         li.append(what, when); list.append(li);
       });
-      $('#burnBotNote').textContent = compact(d.totals.burned) + ' burned so far, automatically every hour';
+      $('#burnBotNote').textContent = compact(d.totals.burned) + ' burned so far, automatically within a minute of each fee';
       $('#burnFeed').hidden = false;
     } catch (e) { /* no burn history yet */ }
   }
