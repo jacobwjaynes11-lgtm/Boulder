@@ -462,15 +462,6 @@
     <li>Fair launch on pump.fun</li><li>No presale</li><li>3% to holders in BTC</li><li>Every burn checkable on-chain</li>
   </ul>
   <div class="socials hero-socials" id="heroSocials" hidden></div>
-  <div class="countdown" id="countdown" hidden>
-    <p class="cd-label" id="cdLabel">Launching soon</p>
-    <div class="cd-time" id="cdTime"></div>
-    <p class="cd-note">Fair launch on pump.fun, paired with Bitcoin. No presale. Holders with $20+ share 3% of every trade, paid in BTC.</p>
-    <div class="cd-actions">
-      <a class="btn" id="cdAlert" target="_blank" rel="noopener" hidden>Get the launch alert</a>
-      <button class="ghost" id="cdCal">Add to calendar</button>
-    </div>
-  </div>
 </div>
 
 <main id="play">
@@ -1590,7 +1581,7 @@
     instagram: '',              // e.g. 'https://instagram.com/yourcoin'
     youtube: '',                // e.g. 'https://youtube.com/@yourcoin'
     url: 'https://bouldr.fun',  // the link people share
-    launchAt: '2026-10-29T14:00:00-05:00',  // launch time for the countdown (Thursday 2 PM Central); it hides once COIN_MINT is set
+    launchAt: '',                            // launch countdown removed
     burnWallet: ''              // the burn wallet's PUBLIC address (never the private key); also receives the 0.5% site fee
   };
   // ---------- Site fee: a small cut of every trade made on this site goes to the burn wallet ----------
@@ -3490,7 +3481,7 @@
   // ---------- Launch countdown (shown until COIN_MINT is set) ----------
   function setupCountdown() {
     const at = Date.parse(SITE.launchAt || '');
-    if (!at || COIN_MINT || PREVIEW_MINT || DEMO_PAGE || document.body.classList.contains('guest')) return;
+    if (!at || !$('#countdown') || COIN_MINT || PREVIEW_MINT || DEMO_PAGE || document.body.classList.contains('guest')) return;
     $('#countdown').hidden = false;
     const when = new Date(at).toLocaleString(undefined, { weekday: 'long', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', timeZoneName: 'short' });
     $('#cdLabel').textContent = SITE.ticker + ' launches on pump.fun ' + when;
