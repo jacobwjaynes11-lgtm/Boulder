@@ -187,6 +187,22 @@ export async function runBurn(env, store, opts = {}) {
   let pending = (await store.getPending()) || 0;                 // lamports claimed earlier but not yet spent
   const result = { wallet, claimSig: null, claimedSol: 0, buySig: null, spentSol: 0, burnSig: null, burned: 0 };
 
+  // 0) Burn any of the coin already sitting in the burn wallet (bought by hand, or left from a run that couldn't
+  //    finish its burn), so tokens never wait there. This is the wallet's only job, so all of it is burned.
+  const sitting = await tokenHolding(env, wallet, cfg.mint);
+  if (sitting.amount > 0n) {
+    const { value: { blockhash } } = await rpc(env, 'getLatestBlockhash', [{ commitment: 'confirmed' }]);
+    const tx = burnTx({ wallet, tokenAccount: sitting.address, mint: cfg.mint, tokenProgram: sitting.program, amount: sitting.amount, decimals: sitting.decimals, blockhash, priorityFee: cfg.priorityFee });
+    const signed = await signTx(tx, kp);
+    checkTx(parseTx(signed), wallet, cfg, 'Burn');
+    const cost = -(await simulate(env, signed, wallet, 'Burn'));
+    if (cost > L(0.001) + L(cfg.priorityFee)) throw new Error('Burn would cost more SOL than expected; refusing to send');
+    result.burnSig = await send(env, signed);
+    result.burned = Number(sitting.amount) / 10 ** sitting.decimals;
+    try { result.supplyAfter = (await rpc(env, 'getTokenSupply', [cfg.mint])).value.uiAmount; } catch (e) {}
+    return say('burned', result);
+  }
+
   // 1) Claim creator fees (once an hour), if there's enough to be worth it (no fees yet just means nothing to claim)
   let claimTx = null, gain = 0;
   if (opts.claim !== false) try {
