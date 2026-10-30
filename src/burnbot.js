@@ -208,16 +208,19 @@ export async function runBurn(env, store, opts = {}) {
 
   // 2) Buy back with what was claimed (or, for a dedicated burn wallet, everything above the reserve)
   const balance = await getBalance(env, wallet);
+  // a buy costs the amount PLUS trading fees (the 3% holder reward and pump.fun's fees) and, the first time,
+  // a small token-account deposit, so the budget leaves room for those and the reserve stays untouched
+  const FEE = 1.06, SETUP = L(0.004);
   let budget = cfg.spendAll
-    ? Math.min(balance - L(cfg.reserveSol) - L(cfg.gasSol), L(cfg.maxBuySol))
-    : Math.min(pending - L(cfg.gasSol), balance - L(cfg.reserveSol), L(cfg.maxBuySol));
+    ? Math.min(Math.floor((balance - L(cfg.reserveSol) - L(cfg.gasSol) - SETUP) / FEE), L(cfg.maxBuySol))
+    : Math.min(pending - L(cfg.gasSol), Math.floor((balance - L(cfg.reserveSol) - SETUP) / FEE), L(cfg.maxBuySol));
   if (budget < L(cfg.minBuySol)) return say(result.claimSig ? 'claimed; saving up until there\u2019s enough to buy' : 'nothing to claim yet', { ...result, pendingSol: pending / LAMPORTS });
   const amountSol = Math.floor(budget / 1000) / 1e6;             // whole micro-SOL
   const holdingBefore = await tokenHolding(env, wallet, cfg.mint);
   const buyTx = await signTx(await portal({ action: 'buy', mint: cfg.mint, amount: amountSol, denominatedInSol: 'true', slippage: cfg.slippage, priorityFee: cfg.priorityFee, pool: 'auto' }, wallet), kp);
   checkTx(parseTx(buyTx), wallet, cfg, 'Buy');
   const spend = -(await simulate(env, buyTx, wallet, 'Buy'));
-  const allowed = L(amountSol) * 1.03 + L(0.004) + L(cfg.priorityFee);  // amount, the trading fee, new token account rent, network fees
+  const allowed = L(amountSol) * FEE + SETUP + L(cfg.priorityFee);  // amount, trading fees, new token account deposit, network fees
   if (spend > allowed) throw new Error(`Buy would take ${spend / LAMPORTS} SOL from the wallet, more than the ${amountSol} SOL planned; refusing to send`);
   result.buySig = await send(env, buyTx);
   result.spentSol = amountSol;
