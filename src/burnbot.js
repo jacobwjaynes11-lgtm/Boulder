@@ -1,4 +1,5 @@
-// Boulder burn bot: every hour, claim the creator fees, buy the coin back with them, and burn what it bought.
+// Boulder burn bot: every minute, buy the coin back with whatever is in the burn wallet and burn what it bought.
+// Once an hour it also tries to claim creator fees first.
 //
 // Settings live in wrangler.jsonc ("vars"); the wallet key is a Cloudflare secret named BURN_KEY.
 // Safety rules, checked on every run:
@@ -174,7 +175,7 @@ function burnTx({ wallet, tokenAccount, mint, tokenProgram, amount, decimals, bl
 }
 
 // ---------- one run ----------
-export async function runBurn(env, store) {
+export async function runBurn(env, store, opts = {}) {
   const cfg = settings(env);
   const say = (status, extra = {}) => ({ time: new Date().toISOString(), status, ...extra });
   if (cfg.paused) return say('paused');
@@ -186,9 +187,9 @@ export async function runBurn(env, store) {
   let pending = (await store.getPending()) || 0;                 // lamports claimed earlier but not yet spent
   const result = { wallet, claimSig: null, claimedSol: 0, buySig: null, spentSol: 0, burnSig: null, burned: 0 };
 
-  // 1) Claim creator fees, if there's enough to be worth it (no fees yet just means nothing to claim this hour)
+  // 1) Claim creator fees (once an hour), if there's enough to be worth it (no fees yet just means nothing to claim)
   let claimTx = null, gain = 0;
-  try {
+  if (opts.claim !== false) try {
     claimTx = await signTx(await portal({ action: 'collectCreatorFee', priorityFee: cfg.priorityFee }, wallet), kp);
     checkTx(parseTx(claimTx), wallet, cfg, 'Claim');
     gain = await simulate(env, claimTx, wallet, 'Claim');
@@ -252,6 +253,13 @@ export class BurnLog {
       await st.put('last', entry);
       return new Response('ok');
     }
+    // a lock so two runs never overlap and spend the same SOL twice (it expires on its own after 50 s)
+    if (url.pathname === '/lock') {
+      const now = Date.now(), until = (await st.get('lockUntil')) || 0;
+      if (request.method === 'DELETE') { await st.delete('lockUntil'); return new Response('ok'); }
+      if (until > now) return new Response('busy');
+      await st.put('lockUntil', now + 50_000); return new Response('ok');
+    }
     if (url.pathname === '/pending') {
       if (request.method === 'POST') { await st.put('pending', Number(await request.text()) || 0); return new Response('ok'); }
       return new Response(String((await st.get('pending')) || 0));
@@ -264,16 +272,19 @@ export class BurnLog {
   }
 }
 
-// Called by the hourly schedule
-export async function scheduledBurn(env) {
+// Called by the schedule: every minute (and with { claim: true } once an hour)
+export async function scheduledBurn(env, opts = {}) {
   const stub = env.BURNS.get(env.BURNS.idFromName('main'));
   const store = {
     getPending: async () => Number(await (await stub.fetch('https://burns/pending')).text()) || 0,
     setPending: async v => { await stub.fetch('https://burns/pending', { method: 'POST', body: String(Math.round(v)) }); },
   };
+  if ((await (await stub.fetch('https://burns/lock', { method: 'POST' })).text()) !== 'ok') return { status: 'skipped: the previous run is still going' };
   let entry;
-  try { entry = await runBurn(env, store); }
+  try { entry = await runBurn(env, store, opts); }
   catch (e) { entry = { time: new Date().toISOString(), status: 'error', error: String(e.message || e).slice(0, 300) }; }
-  await stub.fetch('https://burns/record', { method: 'POST', body: JSON.stringify(entry) });
+  finally { await stub.fetch('https://burns/lock', { method: 'DELETE' }); }
+  // quiet minutes with nothing to buy aren't worth a log write; burns, errors and hourly runs are always recorded
+  if (entry.status !== 'nothing to claim yet' || opts.claim) await stub.fetch('https://burns/record', { method: 'POST', body: JSON.stringify(entry) });
   return entry;
 }

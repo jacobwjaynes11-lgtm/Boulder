@@ -40,9 +40,11 @@ export default {
     }
     return env.ASSETS.fetch(request);
   },
-  // Every hour ("triggers" in wrangler.jsonc): claim creator fees, buy the coin back, burn it
+  // Every minute ("triggers" in wrangler.jsonc): buy back and burn whatever has landed in the burn wallet.
+  // Once an hour (on the hour) it also tries to claim creator fees first.
   async scheduled(event, env, ctx) {
-    ctx.waitUntil(scheduledBurn(env));
+    const onTheHour = new Date(event.scheduledTime || Date.now()).getUTCMinutes() === 0;
+    ctx.waitUntil(scheduledBurn(env, { claim: onTheHour }));
   },
 };
 
