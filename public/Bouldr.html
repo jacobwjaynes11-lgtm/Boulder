@@ -10,9 +10,16 @@
 <meta property="og:title" content="Boulder ($BOULDER) · Push the Boulder. Earn BTC.">
 <meta property="og:description" content="A meme coin paired with Bitcoin, with a live game strapped to it. 3% of every trade goes to holders in BTC.">
 <meta property="og:url" content="https://bouldr.fun/">
-<meta name="twitter:card" content="summary">
+<meta name="twitter:card" content="summary_large_image">
 <meta name="theme-color" content="#0e0c09">
-<link rel="icon" href="data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20viewBox%3D%220%200%2032%2032%22%3E%3Ccircle%20cx%3D%2216%22%20cy%3D%2216%22%20r%3D%2214%22%20fill%3D%22%235a6988%22%20stroke%3D%22%23181425%22%20stroke-width%3D%222%22%2F%3E%3Ccircle%20cx%3D%2212%22%20cy%3D%2211%22%20r%3D%224%22%20fill%3D%22%238b9bb4%22%2F%3E%3Ctext%20x%3D%2216.5%22%20y%3D%2222%22%20font-family%3D%22Arial%22%20font-weight%3D%22700%22%20font-size%3D%2214%22%20text-anchor%3D%22middle%22%20fill%3D%22%23f7931a%22%3E%E2%82%BF%3C%2Ftext%3E%3C%2Fsvg%3E">
+<link rel="icon" type="image/png" sizes="48x48" href="/favicon-48.png">
+<link rel="icon" type="image/png" sizes="192x192" href="/logo-192.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<meta property="og:image" content="https://bouldr.fun/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="The Boulder coin: a pixel-art mountain under a Bitcoin sun">
+<meta name="twitter:image" content="https://bouldr.fun/og-image.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -167,7 +174,17 @@
   .site-header .btn { margin: 0; }
   @media (max-width: 760px) { .nav { display: none; } .site-header .btn { margin-left: auto; } .site-header .in { padding: 10px 16px; } }
 
-  .hero { max-width: 1280px; margin: 0 auto; padding: 44px 28px 6px; }
+  .hero { max-width: 1280px; margin: 0 auto; padding: 44px 28px 6px; position: relative; }
+  /* the coin logo: a large floating coin beside the headline on wide screens, a small one above it everywhere else */
+  .hero-logo { display: block; width: 104px; height: auto; margin: 0 0 18px; filter: drop-shadow(0 0 28px rgba(247, 147, 26, .35)); }
+  @media (min-width: 1320px) {
+    .hero-logo { position: absolute; right: 28px; top: 34px; width: clamp(270px, 22vw, 330px); margin: 0; animation: coin-float 6s ease-in-out infinite; }
+  }
+  @keyframes coin-float { 0%, 100% { transform: translateY(0) rotate(-1.5deg); } 50% { transform: translateY(-12px) rotate(1.5deg); } }
+  @media (prefers-reduced-motion: reduce) { .hero-logo { animation: none !important; } }
+  .brand { display: inline-flex; align-items: center; gap: 10px; }
+  .brand-logo { width: 30px; height: 30px; flex: none; }
+  .brand-logo.big { width: 40px; height: 40px; }
   .hero h1 { font-family: var(--display); font-weight: 700; font-size: clamp(42px, 7.2vw, 88px); line-height: 1; margin: 0 0 16px; letter-spacing: .005em; }
   .hero p { max-width: 58ch; color: var(--muted); font-size: 18px; line-height: 1.55; margin: 0 0 22px; }
   .cta { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
@@ -407,7 +424,7 @@
 <body>
 <header class="site-header">
   <div class="in">
-    <a class="brand" href="#top" data-site="ticker">$BOULDER</a>
+    <a class="brand" href="#top"><img class="brand-logo" src="/logo-96.webp" alt="" width="30" height="30" data-boulder-only onerror="this.remove()"><span data-site="ticker">$BOULDER</span></a>
     <nav class="nav" aria-label="Sections">
       <a href="#how">How It Works</a>
       <a href="#rewards">Earn BTC</a>
@@ -423,6 +440,7 @@
 </header>
 
 <div class="hero" id="top">
+  <img class="hero-logo" src="/logo-512.webp" alt="The Boulder coin: a pixel-art mountain under a Bitcoin sun" width="512" height="512" data-boulder-only onerror="this.remove()">
   <h1>Push the boulder. <span class="earn">Earn BTC.</span></h1>
   <p id="heroText"><span data-site="name">Boulder</span> is a meme coin paired with Bitcoin, with a game strapped to it. Every buy pushes The Boulder Holders up the mountain, every sell lets the boulder slide back, and 3% of every trade goes to holders in BTC. They never reach the top. That’s the point.</p>
   <div class="cta">
@@ -684,7 +702,7 @@
   <div class="in">
     <div class="foot-grid">
       <div class="foot-brand">
-        <a class="brand" href="#top" data-site="ticker">$BOULDER</a>
+        <a class="brand" href="#top"><img class="brand-logo big" src="/logo-96.webp" alt="" width="40" height="40" data-boulder-only onerror="this.remove()"><span data-site="ticker">$BOULDER</span></a>
         <p>Push the boulder. Earn BTC. A meme coin on Solana with a live game strapped to it.</p>
         <div class="socials" id="socials"></div>
         <span class="ca-chip" data-ca-wrap hidden>CA <code data-ca></code><button class="ghost small" data-copy-ca>Copy</button></span>
