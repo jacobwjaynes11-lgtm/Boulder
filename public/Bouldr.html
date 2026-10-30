@@ -179,6 +179,7 @@
   .hero-logo { display: block; width: 104px; height: auto; margin: 0 0 18px; filter: drop-shadow(0 0 28px rgba(247, 147, 26, .35)); }
   @media (min-width: 1320px) {
     .hero-logo { position: absolute; right: 28px; top: 34px; width: clamp(270px, 22vw, 330px); margin: 0; animation: coin-float 6s ease-in-out infinite; }
+    body:not(.guest) .hero:has(.hero-logo) h1, body:not(.guest) .hero:has(.hero-logo) > p { max-width: calc(100% - clamp(270px, 22vw, 330px) - 60px); }   /* keep the headline clear of the coin */
   }
   @keyframes coin-float { 0%, 100% { transform: translateY(0) rotate(-1.5deg); } 50% { transform: translateY(-12px) rotate(1.5deg); } }
   @media (prefers-reduced-motion: reduce) { .hero-logo { animation: none !important; } }
