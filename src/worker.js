@@ -291,13 +291,22 @@ async function burnHistory(env, s) {
 }
 
 async function tradeFromTx(tx, sig, mint, solUsd = 0) {
-  const payer = tx.transaction.message.accountKeys[0];
-  const payerKey = typeof payer === 'string' ? payer : payer.pubkey;
-  const sum = (arr, m) => (arr || []).filter(b => b.mint === m && b.owner === payerKey)
+  // The trader is the signer whose balance of the coin changed. Usually that's the fee payer (the first signer),
+  // but pump.fun now sponsors fees on some trades, so the fee payer can be pump.fun's own wallet instead.
+  const msg = tx.transaction.message;
+  const keys = msg.accountKeys.map(k => (typeof k === 'string' ? k : k.pubkey));
+  const nSigners = Math.max(1, (msg.header && msg.header.numRequiredSignatures) || 1);
+  const sumFor = (arr, m, owner) => (arr || []).filter(b => b.mint === m && b.owner === owner)
     .reduce((a, b) => a + Number(b.uiTokenAmount.uiAmount || 0), 0);
+  let idx = 0;
+  for (let i = 0; i < Math.min(nSigners, keys.length); i++) {
+    if (Math.abs(sumFor(tx.meta.postTokenBalances, mint, keys[i]) - sumFor(tx.meta.preTokenBalances, mint, keys[i])) >= 1e-6) { idx = i; break; }
+  }
+  const payerKey = keys[idx];
+  const sum = (arr, m) => sumFor(arr, m, payerKey);
   const dTok = sum(tx.meta.postTokenBalances, mint) - sum(tx.meta.preTokenBalances, mint);
   if (Math.abs(dTok) < 1e-6) return null;
-  const dSol = (tx.meta.postBalances[0] - tx.meta.preBalances[0] + tx.meta.fee) / 1e9
+  const dSol = (tx.meta.postBalances[idx] - tx.meta.preBalances[idx] + (idx === 0 ? tx.meta.fee : 0)) / 1e9
     + (sum(tx.meta.postTokenBalances, WSOL) - sum(tx.meta.preTokenBalances, WSOL));
   // The payer's change in every other token (the quote side, e.g. wrapped BTC on a Bitcoin-paired coin)
   const others = new Set([...(tx.meta.preTokenBalances || []), ...(tx.meta.postTokenBalances || [])]
